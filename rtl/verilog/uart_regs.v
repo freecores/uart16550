@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.36  2001/12/20 13:25:46  mohor
+// rx push changed to be only one cycle wide.
+//
 // Revision 1.35  2001/12/19 08:03:34  mohor
 // Warnings cleared.
 //
@@ -534,7 +537,7 @@ assign lsr3 = rf_data_out[0]; // framing error bit
 assign lsr4 = rf_data_out[2]; // break error in the character
 assign lsr5 = (tf_count==5'b0 && thre_set_en);  // transmitter fifo is empty
 assign lsr6 = (tf_count==5'b0 && thre_set_en && (tstate == /*`S_IDLE */ 0)); // transmitter empty
-assign lsr7 = rf_error_bit;
+assign lsr7 = rf_error_bit | rf_overrun;
 
 // lsr bit0 (receiver data available)
 reg 	 lsr0_d;
