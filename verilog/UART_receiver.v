@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.5  2001/06/02 14:28:14  gorban
+// Fixed receiver and transmitter. Major bug fixed.
+//
 // Revision 1.4  2001/05/31 20:08:01  gorban
 // FIFO changes and other corrections.
 //
@@ -138,6 +141,8 @@ UART_FIFO #(`FIFO_REC_WIDTH) fifo_rx(
 
 wire		rcounter16_eq_7 = (rcounter16 == 4'd7);
 wire		rcounter16_eq_0 = (rcounter16 == 4'd0);
+wire		rcounter16_eq_1 = (rcounter16 == 4'd1);
+
 wire	[3:0]	rcounter16_minus_1 = rcounter16 - 4'd1;
 
 `define SR_IDLE		4'd0
@@ -279,7 +284,7 @@ begin
 				rstate     <= #1 `SR_LAST;
 			end
 	`SR_LAST :	begin
-				if (rcounter16_eq_0)
+				if (rcounter16_eq_1)
 					rstate <= #1 `SR_IDLE;
 				rcounter16 <= #1 rcounter16_minus_1;
 				rf_push    <= #1 1'b0;

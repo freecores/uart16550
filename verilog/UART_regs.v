@@ -61,6 +61,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.9  2001/05/31 20:08:01  gorban
+// FIFO changes and other corrections.
+//
 // Revision 1.8  2001/05/29 20:05:04  gorban
 // Fixed some bugs and synthesis problems.
 //
@@ -83,8 +86,6 @@
 
 `define DL1 7:0
 `define DL2 15:8
-`define DL3 23:16
-`define DL4 31:24
 
 module UART_regs (clk,
 	wb_rst_i, wb_addr_i, wb_dat_i, wb_dat_o, wb_we_i,
@@ -130,12 +131,12 @@ reg	[4:0]	mcr;
 reg	[7:0]	lcr;
 reg	[7:0]	lsr;
 reg	[7:0]	msr;
-reg	[31:0]	dl;  // 32-bit divisor latch
+reg	[15:0]	dl;  // 32-bit divisor latch
 reg		start_dlc; // activate dlc on writing to DL1
 reg		lsr_mask;
 reg		msi_reset; // reset MSR 4 lower bits indicator
 reg		threi_clear; // THRE interrupt clear flag
-reg	[31:0]	dlc;  // 32-bit divisor latch counter
+reg	[15:0]	dlc;  // 32-bit divisor latch counter
 reg		int_o;
 
 reg	[3:0]	trigger_level; // trigger level of the receiver FIFO
@@ -203,13 +204,8 @@ begin
 	`REG_IE	: wb_dat_o <= #1 dlab ? dl[`DL2] : ier;
 	`REG_II	: wb_dat_o <= #1 {4'b1100,iir};
 	`REG_LC	: wb_dat_o <= #1 lcr;
-	`REG_LS	: if (dlab)
-			wb_dat_o <= #1 dl[`DL4];
-		  else
-			wb_dat_o <= #1 lsr;
+	`REG_LS	: wb_dat_o <= #1 lsr;
 	`REG_MS	: wb_dat_o <= #1 msr;
-	`REG_DL3: wb_dat_o <= #1 dlab ? dl[`DL3] : 8'b0;
-
 	default:  wb_dat_o <= #1 8'b0; // ??
 	endcase
     else
@@ -312,18 +308,12 @@ always @(posedge clk or posedge wb_rst_i)
 		tx_reset <= #1 0;
 	end
 
-// Modem Control Register or DL3
+// Modem Control Register
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i)
-	begin
 		mcr <= #1 5'b0; 
-		dl[`DL3] <= #1 8'b0;
-	end
 	else
 	if (wb_we_i && wb_addr_i==`REG_MC)
-		if (dlab)
-			dl[`DL3] <= #1 wb_dat_i;
-		else
 			mcr <= #1 wb_dat_i[4:0];
 
 // TX_FIFO or DL1
@@ -362,14 +352,6 @@ always @(fcr[`FC_TL])
 		2'b11 : trigger_level = 14;
 	endcase
 	
-// DL4 write
-always @(posedge clk or posedge wb_rst_i)
-	if (wb_rst_i)
-		dl[`DL4] <= #1 8'b0;
-	else
-	if (wb_we_i && wb_addr_i==`REG_DL4)
-		dl[`DL4] <= #1 wb_dat_i;
-
 //
 //  STATUS REGISTERS  //
 //
@@ -412,7 +394,7 @@ always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
 	begin
-		dlc    <= #1 32'hffffff00;
+		dlc    <= #1 0;
 		enable <= #1 1'b0;
 	end
 	else
@@ -424,9 +406,9 @@ begin
 		end
 		else
 		begin
-			if (dl!=32'b0)
+			if (dl!=0)
 			begin
-				if ( (dlc-1)==32'b0 )
+				if ( (dlc-1)==0 )
 				begin
 					enable <= #1 1'b1;
 					dlc <= #1 dl;
@@ -439,7 +421,7 @@ begin
 			end
 			else
 			begin
-				dlc <= #1 32'hffffff0A;
+				dlc <= #1 0;
 				enable <= #1 1'b0;
 			end
 		end

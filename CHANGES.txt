@@ -1,5 +1,20 @@
 Note: This Changes file is being maintained since 25.5.2001.
 
+23.06.2001
+~~~~~~~~~~
+
+* With the help of Bob Kirstein another two bugs were fixed:
+   1. Trasmitter was sending stop bit two 16xclock cycle slonger than needed.
+   2. Receiver was losing 1 16xclock cycle on each character and went out of sync.
+
+* Major change: 
+    I have modified the divisor latch register to be 16-bit long instead of 32 as I thought was
+    necessary for higher speed systems. Thanks to Rick Wright for pointing this out.
+    So now, DL3 and DL4 register bytes are not used.
+    Documentation is updated to follow this change.
+
+* Note that more than 1 stop bit in a byte i snot implemented.
+
 2.05.2001
 ~~~~~~~~~
 

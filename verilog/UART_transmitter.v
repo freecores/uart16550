@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.5  2001/06/02 14:28:14  gorban
+// Fixed receiver and transmitter. Major bug fixed.
+//
 // Revision 1.4  2001/05/31 20:08:01  gorban
 // FIFO changes and other corrections.
 //
@@ -251,7 +254,7 @@ begin
 			end
 	`S_SEND_STOP :  begin
 				if (~|counter16)
-					counter16 <= #1 4'b1111;
+					counter16 <= #1 4'b1101;
 				else
 				if (counter16 == 4'b0001)
 				begin
