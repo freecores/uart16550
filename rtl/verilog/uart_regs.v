@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.31  2001/12/14 10:06:58  mohor
+// After reset modem status register MSR should be reset.
+//
 // Revision 1.30  2001/12/13 10:09:13  mohor
 // thre irq should be cleared only when being source of interrupt.
 //
@@ -262,6 +265,7 @@ wire 										dlab;			   // divisor latch access bit
 wire 										cts_pad_i, dsr_pad_i, ri_pad_i, dcd_pad_i; // modem status bits
 wire 										loopback;		   // loopback bit (MCR bit 4)
 wire 										cts, dsr, ri, dcd;	   // effective signals (considering loopback)
+wire                    cts_c, dsr_c, ri_c, dcd_c; // Complement effective signals (considering loopback)
 wire 										rts_pad_o, dtr_pad_o;		   // modem control outputs
 
 // LSR bits wires and regs
@@ -277,8 +281,11 @@ wire 										lsr_mask; // lsr_mask
 assign 									lsr[7:0] = { lsr7r, lsr6r, lsr5r, lsr4r, lsr3r, lsr2r, lsr1r, lsr0r };
 
 assign 									{cts_pad_i, dsr_pad_i, ri_pad_i, dcd_pad_i} = modem_inputs;
-assign 									{cts, dsr, ri, dcd} = loopback ? {mcr[`UART_MC_RTS],mcr[`UART_MC_DTR],mcr[`UART_MC_OUT1],mcr[`UART_MC_OUT2]}
+assign 									{cts, dsr, ri, dcd} = loopback ? {mcr[`UART_MC_DTR],mcr[`UART_MC_RTS],mcr[`UART_MC_OUT1],mcr[`UART_MC_OUT2]}
 											: ~{cts_pad_i,dsr_pad_i,ri_pad_i,dcd_pad_i};
+
+assign                  {cts_c, dsr_c, ri_c, dcd_c} = loopback ? {mcr[`UART_MC_RTS],mcr[`UART_MC_DTR],mcr[`UART_MC_OUT1],mcr[`UART_MC_OUT2]}
+                      :  {cts_pad_i,dsr_pad_i,ri_pad_i,dcd_pad_i};
 
 assign 									dlab = lcr[`UART_LC_DL];
 assign 									loopback = mcr[4];
@@ -484,14 +491,16 @@ always @(fcr)
 //
 
 // Modem Status Register
+reg [3:0] delayed_modem_signals;
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
 		msr <= #1 0;
 	else begin
 		msr[`UART_MS_DDCD:`UART_MS_DCTS] <= #1 msi_reset ? 4'b0 :
-			msr[`UART_MS_DDCD:`UART_MS_DCTS] | ({dcd, ri, dsr, cts} ^ msr[`UART_MS_CDCD:`UART_MS_CCTS]);
-		msr[`UART_MS_CDCD:`UART_MS_CCTS] <= #1 {dcd, ri, dsr, cts};
+			msr[`UART_MS_DDCD:`UART_MS_DCTS] | ({dcd, ri, dsr, cts} ^ delayed_modem_signals[3:0]);
+		msr[`UART_MS_CDCD:`UART_MS_CCTS] <= #1 {dcd_c, ri_c, dsr_c, cts_c};
+		delayed_modem_signals[3:0] <= #1 {dcd, ri, dsr, cts};
 	end
 end
 
