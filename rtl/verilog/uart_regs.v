@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.34  2001/12/19 07:33:54  mohor
+// Synplicity was having troubles with the comment.
+//
 // Revision 1.33  2001/12/17 10:14:43  mohor
 // Things related to msr register changed. After THRE IRQ occurs, and one
 // character is written to the transmit fifo, the detection of the THRE bit in the
@@ -327,7 +330,7 @@ reg  [7:0]                block_value; // One character length minus stop bit
 uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_pad_o, tstate, tf_count, tx_reset, lsr_mask);
 
 // Receiver Instance
-uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
+uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, 
 	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate, rf_push);
 
 
@@ -505,7 +508,10 @@ reg [3:0] delayed_modem_signals;
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
-		msr <= #1 0;
+	  begin
+  		msr <= #1 0;
+	  	delayed_modem_signals[3:0] <= #1 0;
+	  end
 	else begin
 		msr[`UART_MS_DDCD:`UART_MS_DCTS] <= #1 msi_reset ? 4'b0 :
 			msr[`UART_MS_DDCD:`UART_MS_DCTS] | ({dcd, ri, dsr, cts} ^ delayed_modem_signals[3:0]);

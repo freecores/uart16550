@@ -64,6 +64,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.11  2001/12/06 14:51:04  gorban
+// Bug in LSR[0] is fixed.
+// All WISHBONE signals are now sampled, so another wait-state is introduced on all transfers.
+//
 // Revision 1.10  2001/12/03 21:44:29  gorban
 // Updated specification documentation.
 // Added full 32-bit data bus interface, now as default.
@@ -162,7 +166,6 @@ reg 								wb_cyc_is;
 reg 								wb_stb_is;
 reg [3:0] 						wb_sel_is;
 wire [3:0]   wb_sel_i;
-reg 			 wb_ack; // wb_ack is sampled to make 2 clock wait state between transfers 
 reg 			 wre ;// timing control signal for write or read enable
 
 // wb_ack_o FSM
@@ -171,6 +174,7 @@ always  @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i) begin
 		wb_ack_o <= #1 1'b0;
 		wbstate <= #1 0;
+		wre <= #1 1'b1;
 	end else
 		case (wbstate)
 			0: begin
