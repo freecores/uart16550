@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.14  2001/11/10 12:43:21  gorban
+// Synthesis bugs fixed. Some other minor changes
+//
 // Revision 1.13  2001/11/08 14:54:23  mohor
 // Comments in Slovene language deleted, few small fixes for better work of
 // old tools. IRQs need to be fix.
@@ -119,7 +122,7 @@
 `include "uart_defines.v"
 
 module uart_receiver (clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
-	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask);
+	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask);
 
 input				clk;
 input				wb_rst_i;
@@ -132,7 +135,6 @@ input				rx_reset;
 input       lsr_mask;
 
 output	[9:0]			counter_t;
-output	[7:0]			counter_b;
 output	[`UART_FIFO_COUNTER_W-1:0]	rf_count;
 output	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_out;
 output				rf_overrun;
@@ -147,6 +149,7 @@ reg		rparity_error;
 reg		rframing_error;		// framing error flag
 reg		rbit_in;
 reg		rparity_xor;
+reg	[7:0]	counter_b;	// counts the 0 (low) signals
 
 // RX FIFO signals
 reg	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_in;
@@ -157,6 +160,7 @@ wire				rf_underrun;
 wire				rf_overrun;
 wire	[`UART_FIFO_COUNTER_W-1:0]	rf_count;
 wire				rf_error_bit; // an error (parity or framing) is inside the fifo
+wire 				break_error = (counter_b == 0);
 
 // RX FIFO instance
 uart_fifo #(`UART_FIFO_REC_WIDTH) fifo_rx(
@@ -210,14 +214,24 @@ begin
 	  rf_data_in 			<= #1 0;
   end
   else
+	  if (break_error && rstate != sr_idle) // break condition met while receiver is not idle
+	  begin
+		  rstate 		 <= #1 sr_idle;
+		  rf_data_in 	 <= #1 {8'b0, 3'b100}; // break input (empty character) to receiver FIFO
+		  rf_push 		 <= #1 1'b1;
+	  end
   if (enable)
   begin
 	case (rstate)
-	sr_idle :	if (srx_pad_i==1'b0)   // detected a pulse (start bit?)
+	sr_idle : begin
+			rf_push 			  <= #1 1'b0;
+			rf_data_in 	  <= #1 0;
+			if (srx_pad_i==1'b0)   // detected a pulse (start bit?)
 			begin
-				rstate <= #1 sr_rec_start;
-				rcounter16 <= #1 4'b1110;
+				rstate 		  <= #1 sr_rec_start;
+				rcounter16 	  <= #1 4'b1110;
 			end
+		end
 	sr_rec_start :	begin
 				if (rcounter16_eq_7)    // check the pulse
 					if (srx_pad_i==1'b1)   // no start bit
@@ -312,7 +326,7 @@ begin
 	sr_push :	begin
 ///////////////////////////////////////
 //				$display($time, ": received: %b", rf_data_in);
-  			rf_data_in <= #1 {rshift, rparity_error, rframing_error};
+  			rf_data_in <= #1 {rshift, 1'b0, rparity_error, rframing_error};
 				rf_push    <= #1 1'b1;
 				rstate     <= #1 sr_last;
 			end
@@ -330,7 +344,6 @@ end // always of receiver
 //
 // Break condition detection.
 // Works in conjuction with the receiver state machine
-reg	[7:0]	counter_b;	// counts the 0 (low) signals
 
 always @(posedge clk or posedge wb_rst_i)
 begin

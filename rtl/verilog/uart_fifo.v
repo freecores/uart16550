@@ -64,6 +64,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.12  2001/11/08 14:54:23  mohor
+// Comments in Slovene language deleted, few small fixes for better work of
+// old tools. IRQs need to be fix.
+//
 // Revision 1.11  2001/11/07 17:51:52  gorban
 // Heavily rewritten interrupt and LSR subsystems.
 // Many bugs hopefully squashed.
@@ -290,9 +294,9 @@ wire	[fifo_width-1:0]	word14 = fifo[14];
 wire	[fifo_width-1:0]	word15 = fifo[15];
 
 // a 1 is returned if any of the error bits in the fifo is 1
-assign	error_bit = |(word0[1:0]  | word1[1:0]  | word2[1:0]  | word3[1:0]  |
-            		      word4[1:0]  | word5[1:0]  | word6[1:0]  | word7[1:0]  |
-            		      word8[1:0]  | word9[1:0]  | word10[1:0] | word11[1:0] |
-            		      word12[1:0] | word13[1:0] | word14[1:0] | word15[1:0] );
+assign	error_bit = |(word0[2:0]  | word1[2:0]  | word2[2:0]  | word3[2:0]  |
+            		      word4[2:0]  | word5[2:0]  | word6[2:0]  | word7[2:0]  |
+            		      word8[2:0]  | word9[2:0]  | word10[2:0] | word11[2:0] |
+            		      word12[2:0] | word13[2:0] | word14[2:0] | word15[2:0] );
 
 endmodule

@@ -63,6 +63,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.7  2001/08/24 21:01:12  mohor
+// Things connected to parity changed.
+// Clock devider changed.
+//
 // Revision 1.6  2001/08/23 16:05:05  mohor
 // Stop bit bug fixed.
 // Parity bug fixed.
@@ -106,7 +110,7 @@
 `define UART_IE_RDA	0	// Received Data available interrupt
 `define UART_IE_THRE	1	// Transmitter Holding Register empty interrupt
 `define UART_IE_RLS	2	// Receiver Line Status Interrupt
-`define	UART_IE_MS	3	// Modem Status Interrupt
+`define UART_IE_MS	3	// Modem Status Interrupt
 
 // Interrupt Identification register bits
 `define UART_II_IP	0	// Interrupt pending when 0
@@ -135,20 +139,20 @@
 `define UART_LC_EP	4	// even parity
 `define UART_LC_SP	5	// stick parity
 `define UART_LC_BC	6	// Break control
-`define	UART_LC_DL	7	// Divisor Latch access bit
+`define UART_LC_DL	7	// Divisor Latch access bit
 
 // Modem Control register bits
 `define UART_MC_DTR	0
 `define UART_MC_RTS	1
 `define UART_MC_OUT1	2
-`define	UART_MC_OUT2	3
-`define	UART_MC_LB	4	// Loopback mode
+`define UART_MC_OUT2	3
+`define UART_MC_LB	4	// Loopback mode
 
 // Line Status Register bits
 `define UART_LS_DR	0	// Data ready
 `define UART_LS_OE	1	// Overrun Error
 `define UART_LS_PE	2	// Parity Error
-`define	UART_LS_FE	3	// Framing Error
+`define UART_LS_FE	3	// Framing Error
 `define UART_LS_BI	4	// Break interrupt
 `define UART_LS_TFE	5	// Transmit FIFO is empty
 `define UART_LS_TE	6	// Transmitter Empty indicator
@@ -158,11 +162,11 @@
 `define UART_MS_DCTS	0	// Delta signals
 `define UART_MS_DDSR	1
 `define UART_MS_TERI	2
-`define	UART_MS_DDCD	3
+`define UART_MS_DDCD	3
 `define UART_MS_CCTS	4	// Complement signals
 `define UART_MS_CDSR	5
 `define UART_MS_CRI	6
-`define	UART_MS_CDCD	7
+`define UART_MS_CDCD	7
 
 
 // FIFO parameter defines
@@ -171,8 +175,8 @@
 `define UART_FIFO_DEPTH	16
 `define UART_FIFO_POINTER_W	4
 `define UART_FIFO_COUNTER_W	5
-// receiver fifo has width 10 because it has parity and framing error bits
-`define UART_FIFO_REC_WIDTH  10
+// receiver fifo has width 11 because it has break, parity and framing error bits
+`define UART_FIFO_REC_WIDTH  11
 
 
 
