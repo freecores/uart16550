@@ -89,7 +89,7 @@
 `include "uart_defines.v"
 
 module uart_receiver (clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
-	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset);
+	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, rx_lsr_mask);
 
 input				clk;
 input				wb_rst_i;
@@ -99,6 +99,7 @@ input				srx_pad_i;
 input				enable;
 input				rda_int;
 input				rx_reset;
+input       rx_lsr_mask;
 
 output	[5:0]			counter_t;
 output	[3:0]			counter_b;
@@ -139,7 +140,8 @@ uart_fifo #(`UART_FIFO_REC_WIDTH) fifo_rx(
 	.overrun(	rf_overrun	),
 	.count(		rf_count	),
 	.error_bit(	rf_error_bit	),
-	.fifo_reset(	rx_reset	)
+	.fifo_reset(	rx_reset	),
+	.reset_status(rx_lsr_mask)
 );
 
 wire 		rcounter16_eq_7 = (rcounter16 == 4'd7);
@@ -256,10 +258,14 @@ begin
 			  end
 	sr_check_parity: begin	  // rcounter equals 5
 				case ({lcr[`UART_LC_EP],lcr[`UART_LC_SP]})
-				2'b00: rparity_error <= #1 ~rparity_xor;  // no error if parity 1
-				2'b01: rparity_error <= #1 ~rparity;      // parity should sticked to 1
-				2'b10: rparity_error <= #1 rparity_xor;   // error if parity is odd
-				2'b11: rparity_error <= #1 rparity;	  // parity should be sticked to 0
+//				2'b00: rparity_error <= #1 ~rparity_xor;  // no error if parity 1
+//				2'b01: rparity_error <= #1 ~rparity;      // parity should sticked to 1
+//				2'b10: rparity_error <= #1 rparity_xor;   // error if parity is odd
+//				2'b11: rparity_error <= #1 rparity;	  // parity should be sticked to 0
+				2'b00: rparity_error <= #1 rparity_xor;  // no error if parity 1
+				2'b01: rparity_error <= #1 1'b1;      // parity should sticked to 1
+				2'b10: rparity_error <= #1 ~rparity_xor;   // error if parity is odd
+				2'b11: rparity_error <= #1 1'b0;	  // parity should be sticked to 0
 				endcase
 				rcounter16 <= #1 rcounter16_minus_1;
 				rstate <= #1 sr_wait1;
@@ -308,7 +314,7 @@ begin
 		counter_b <= #1 4'd11;
 	else
 	if (enable)  // only work on enable times
-		if (!srx_pad_i)
+		if (!srx_pad_i)                                                       // Ta vrstica je bila spremenjena igor !!!
 			counter_b <= #1 4'd11; // maximum character time length - 1
 		else
 			if (counter_b != 4'b0)            // break reached

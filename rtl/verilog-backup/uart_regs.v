@@ -91,7 +91,7 @@
 `define UART_DL2 15:8
 
 module uart_regs (clk,
-	wb_rst_i, wb_addr_i, wb_dat_i, wb_dat_o, wb_we_i,
+	wb_rst_i, wb_addr_i, wb_dat_i, wb_dat_o, wb_we_i, wb_re_i, 
 
 // additional signals
 	modem_inputs,
@@ -106,6 +106,7 @@ input	[`UART_ADDR_WIDTH-1:0]	wb_addr_i;
 input	[7:0]	wb_dat_i;
 output	[7:0]	wb_dat_o;
 input		wb_we_i;
+input   wb_re_i;
 
 output		stx_pad_o;
 input		srx_pad_i;
@@ -183,14 +184,16 @@ wire	[`UART_FIFO_COUNTER_W-1:0]	tf_count;
 wire	[2:0]			state;
 wire	[5:0]			counter_t;
 wire	[3:0]			counter_b;
+wire            rx_lsr_mask;
 
 // Transmitter Instance
 uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_pad_o, state, tf_count, tx_reset);
 
 // Receiver Instance
 uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
-	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset);
+	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, rx_lsr_mask);
 
+/*
 always @(posedge clk or posedge wb_rst_i)   // synchrounous reading
 begin
     if (wb_rst_i)
@@ -198,7 +201,7 @@ begin
 	wb_dat_o <= #1 8'b0;
     end
     else
-    if (!wb_we_i)   //if (we're not writing)
+    if (wb_re_i)   //if (we're not writing)
 	case (wb_addr_i)
 	`UART_REG_RB : if (dlab) // Receiver FIFO or DL byte 1
 			wb_dat_o <= #1 dl[`UART_DL1];
@@ -214,6 +217,23 @@ begin
     else
 	wb_dat_o <= #1 8'b0;
 end
+*/
+
+always @(wb_addr_i or dlab or dl or rf_data_out or ier or iir or lcr or lsr or msr)
+begin
+	case (wb_addr_i)
+	`UART_REG_RB : if (dlab) // Receiver FIFO or DL byte 1
+        			wb_dat_o <= dl[`UART_DL1];
+		        else
+			        wb_dat_o <= rf_data_out[9:2];
+	`UART_REG_IE	: wb_dat_o <= dlab ? dl[`UART_DL2] : ier;
+	`UART_REG_II	: wb_dat_o <= {4'b1100,iir};
+	`UART_REG_LC	: wb_dat_o <= lcr;
+	`UART_REG_LS	: wb_dat_o <= lsr;
+	`UART_REG_MS	: wb_dat_o <= msr;
+	default:  wb_dat_o <= 8'b0; // ??
+	endcase
+end
 
 // rf_pop signal handling
 always @(posedge clk or posedge wb_rst_i)
@@ -224,7 +244,7 @@ begin
 	if (rf_pop)	// restore the signal to 0 after one clock cycle
 		rf_pop <= #1 0;
 	else
-	if (!wb_we_i && wb_addr_i == `UART_REG_RB && !dlab)
+	if (wb_re_i && wb_addr_i == `UART_REG_RB && !dlab)
 		rf_pop <= #1 1; // advance read pointer
 end
 
@@ -237,9 +257,11 @@ begin
 	if (lsr_mask)
 		lsr_mask <= #1 0;
 	else
-	if (!wb_we_i && wb_addr_i == `UART_REG_LS && !dlab)
+	if (wb_re_i && wb_addr_i == `UART_REG_LS && !dlab)
 		lsr_mask <= #1 1; // reset bits in the Line Status Register
 end
+
+assign rx_lsr_mask = lsr_mask;
 
 // msi_reset signal handling
 always @(posedge clk or posedge wb_rst_i)
@@ -250,7 +272,7 @@ begin
 	if (msi_reset)
 		msi_reset <= #1 0;
 	else
-	if (!wb_we_i && wb_addr_i == `UART_REG_MS)
+	if (wb_re_i && wb_addr_i == `UART_REG_MS)
 		msi_reset <= #1 1; // reset bits in Modem Status Register
 end
 
@@ -263,7 +285,7 @@ begin
 	if (threi_clear && !lsr[`UART_LS_TFE] && (tf_count==0)) // reset clear flag when tx fifo clears
 		threi_clear <= #1 0;
 	else
-	if (!wb_we_i && wb_addr_i == `UART_REG_II)
+	if (wb_re_i && wb_addr_i == `UART_REG_II)
 		threi_clear <= #1 1; // reset bits in Modem Status Register
 end
 

@@ -90,7 +90,8 @@ module uart_fifo (clk,
 	overrun,
 	count,
 	error_bit,
-	fifo_reset
+	fifo_reset,
+	reset_status
 	);
 
 
@@ -106,6 +107,8 @@ input				push;
 input				pop;
 input	[fifo_width-1:0]	data_in;
 input				fifo_reset;
+input       reset_status;
+
 output	[fifo_width-1:0]	data_out;
 output				overrun;
 output				underrun;
@@ -159,7 +162,8 @@ begin
 	if (wb_rst_i)
 	begin
 		top		<= #1 0;
-		bottom		<= #1 1;
+//		bottom		<= #1 1; igor
+		bottom		<= #1 1'b0;
 		underrun	<= #1 1'b0;
 		overrun		<= #1 1'b0;
 		count		<= #1 0;
@@ -183,17 +187,24 @@ begin
 	else
 	if (fifo_reset) begin
 		top		<= #1 0;
-		bottom		<= #1 1;
+//		bottom		<= #1 1; igor
+		bottom		<= #1 1'b0;
 		underrun	<= #1 1'b0;
 		overrun		<= #1 1'b0;
 		count		<= #1 0;
 	end
+  else
+  if(reset_status)
+    begin
+  		underrun	<= #1 1'b0;
+  		overrun		<= #1 1'b0;
+    end
 	else
 	begin
 		case ({push_rise, pop_rise})
 		2'b00 : begin
 				underrun <= #1 1'b0;
-				overrun  <= #1 1'b0;
+//				overrun  <= #1 1'b0;// Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
 	 	        end
 		2'b10 : if (count==fifo_depth)  // overrun condition
 			begin
@@ -203,29 +214,31 @@ begin
 			else
 			begin
 				top       <= #1 top_plus_1;
-				fifo[top_plus_1] <= #1 data_in;
-				underrun  <= #1 0;
+//				fifo[top_plus_1] <= #1 data_in; igor
+				fifo[top] <= #1 data_in;
+//				overrun   <= #1 0;// Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
 				overrun   <= #1 0;
 				count     <= #1 count + 1;
 			end
 		2'b01 : if (~|count)
 			begin
-				underrun <= #1 1'b1;  // underrun condition
+//				overrun  <= #1 1'b0;  Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
 				overrun  <= #1 1'b0;
 			end
 			else
 			begin
 				bottom   <= #1 bottom + 1;
-				underrun <= #1 1'b0;
+//				overrun  <= #1 1'b0;  Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
 				overrun  <= #1 1'b0;
 				count	 <= #1 count - 1;
 			end
 		2'b11 : begin
 				bottom   <= #1 bottom + 1;
 				top       <= #1 top_plus_1;
-				fifo[top_plus_1] <= #1 data_in;
+//				fifo[top_plus_1] <= #1 data_in; igor
+				fifo[top] <= #1 data_in;
 				underrun <= #1 1'b0;
-				overrun  <= #1 1'b0;
+//				overrun  <= #1 1'b0;  Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
 		        end
 		endcase
 	end
@@ -258,8 +271,8 @@ wire	[fifo_width-1:0]	word15 = fifo[15];
 
 // a 1 is returned if any of the error bits in the fifo is 1
 assign	error_bit = |(word0[1:0]  | word1[1:0]  | word2[1:0]  | word3[1:0]  |
-		      word4[1:0]  | word5[1:0]  | word6[1:0]  | word7[1:0]  |
-		      word8[1:0]  | word9[1:0]  | word10[1:0] | word11[1:0] |
-		      word12[1:0] | word13[1:0] | word14[1:0] | word15[1:0] );
+            		      word4[1:0]  | word5[1:0]  | word6[1:0]  | word7[1:0]  |
+            		      word8[1:0]  | word9[1:0]  | word10[1:0] | word11[1:0] |
+            		      word12[1:0] | word13[1:0] | word14[1:0] | word15[1:0] );
 
 endmodule

@@ -83,13 +83,12 @@
 // Company: Flextronics Semiconductor
 //
 
-`include "uart_defines.v"
 `include "timescale.v"
 
 module uart_wb (clk,
         wb_rst_i, 
 	wb_we_i, wb_stb_i, wb_cyc_i, wb_ack_o,
-	we_o // Write enable output for the core
+	we_o, re_o // Write and read enable output for the core
 	
         );
 
@@ -102,6 +101,7 @@ input				wb_stb_i;
 input				wb_cyc_i;
 output				wb_ack_o;
 output				we_o;
+output				re_o;
 
 wire				we_o;
 reg				wb_ack_o;
@@ -114,10 +114,12 @@ begin
 	end
 	else
 	begin
-		wb_ack_o <= #1 wb_stb_i & wb_cyc_i; // 1 clock wait state on all transfers
+//		wb_ack_o <= #1 wb_stb_i & wb_cyc_i; // 1 clock wait state on all transfers
+		wb_ack_o <= #1 wb_stb_i & wb_cyc_i & ~wb_ack_o; // 1 clock wait state on all transfers
 	end
 end
 
-assign we_o = wb_we_i & wb_cyc_i & wb_stb_i; //WE for registers	
+assign we_o =  wb_we_i & wb_cyc_i & wb_stb_i; //WE for registers	
+assign re_o = ~wb_we_i & wb_cyc_i & wb_stb_i; //RE for registers	
 
 endmodule

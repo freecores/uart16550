@@ -102,10 +102,10 @@ output	[2:0]			state;
 output	[`UART_FIFO_COUNTER_W-1:0]	tf_count;
 
 reg	[2:0]	state;
-reg	[3:0]	counter16;
+reg	[4:0]	counter;
 reg	[2:0]	bit_counter;   // counts the bits to be sent
 reg	[6:0]	shift_out;	// output shift register
-reg		stx_pad_o;
+reg		stx_o_tmp;
 reg		parity_xor;  // parity of the word
 reg		tf_pop;
 reg		bit_out;
@@ -132,7 +132,9 @@ uart_fifo fifo_tx(	// error bit signal is not used in transmitter FIFO
 	.underrun(	tf_underrun	),
 	.overrun(	tf_overrun	),
 	.count(		tf_count	),
-	.fifo_reset(	tx_reset	)
+	.error_bit(),                 // Ta ni priklopljen. Prej je manjkal, dodal Igor
+	.fifo_reset(	tx_reset	),
+	.reset_status(1'b0)
 );
 
 // TRANSMITTER FINAL STATE MACHINE
@@ -149,8 +151,8 @@ begin
   if (wb_rst_i)
   begin
 	state       <= #1 s_idle;
-	stx_pad_o       <= #1 1'b1;
-	counter16   <= #1 4'b0;
+	stx_o_tmp       <= #1 1'b1;
+	counter   <= #1 5'b0;
 	shift_out   <= #1 7'b0;
 	bit_out     <= #1 1'b0;
 	parity_xor  <= #1 1'b0;
@@ -164,12 +166,12 @@ begin
 	s_idle	 :	if (~|tf_count) // if tf_count==0
 			begin
 				state <= #1 s_idle;
-				stx_pad_o <= #1 1'b1;
+				stx_o_tmp <= #1 1'b1;
 			end
 			else
 			begin
 				tf_pop <= #1 1'b0;
-				stx_pad_o  <= #1 1'b1;
+				stx_o_tmp  <= #1 1'b1;
 				state  <= #1 s_pop_byte;
 			end
 	s_pop_byte :	begin
@@ -197,23 +199,23 @@ begin
 			end
 	s_send_start :	begin
 				tf_pop <= #1 1'b0;
-				if (~|counter16)
-					counter16 <= #1 4'b1111;
+				if (~|counter)
+					counter <= #1 5'b01111;
 				else
-				if (counter16 == 4'b0001)
+				if (counter == 5'b00001)
 				begin
-					counter16 <= #1 0;
+					counter <= #1 0;
 					state <= #1 s_send_byte;
 				end
 				else
-					counter16 <= #1 counter16 - 4'b0001;
-				stx_pad_o <= #1 1'b0;
+					counter <= #1 counter - 5'b00001;
+				stx_o_tmp <= #1 1'b0;
 			end
 	s_send_byte :	begin
-				if (~|counter16)
-					counter16 <= #1 4'b1111;
+				if (~|counter)
+					counter <= #1 5'b01111;
 				else
-				if (counter16 == 4'b0001)
+				if (counter == 5'b00001)
 				begin
 					if (bit_counter > 3'b0)
 					begin
@@ -229,44 +231,50 @@ begin
 					else
 					begin
 						case ({lcr[`UART_LC_EP],lcr[`UART_LC_SP]})
-						2'b00:	bit_out <= #1 ~parity_xor;
+						2'b00:	bit_out <= #1 parity_xor;
 						2'b01:	bit_out <= #1 1'b1;
-						2'b10:	bit_out <= #1 parity_xor;
+						2'b10:	bit_out <= #1 ~parity_xor;
 						2'b11:	bit_out <= #1 1'b0;
 						endcase
 						state <= #1 s_send_parity;
 					end
-					counter16 <= #1 0;
+					counter <= #1 0;
 				end
 				else
-					counter16 <= #1 counter16 - 4'b0001;
-				stx_pad_o <= #1 bit_out; // set output pin
+					counter <= #1 counter - 5'b00001;
+				stx_o_tmp <= #1 bit_out; // set output pin
 			end
 	s_send_parity :	begin
-				if (~|counter16)
-					counter16 <= #1 4'b1111;
+				if (~|counter)
+					counter <= #1 5'b01111;
 				else
-				if (counter16 == 4'b0001)
+				if (counter == 5'b00001)
 				begin
-					counter16 <= #1 4'b0;
+					counter <= #1 4'b0;
 					state <= #1 s_send_stop;
 				end
 				else
-					counter16 <= #1 counter16 - 4'b0001;
-				stx_pad_o <= #1 bit_out;
+					counter <= #1 counter - 5'b00001;
+				stx_o_tmp <= #1 bit_out;
 			end
 	s_send_stop :  begin
-				if (~|counter16)
-					counter16 <= #1 4'b1101;
+				if (~|counter)
+				  begin
+						casex ({lcr[`UART_LC_SB],lcr[`UART_LC_BITS]})
+  						3'b0xx:	  counter <= #1 5'b01101;     // 1 stop bit ok igor
+  						3'b100:	  counter <= #1 5'b10101;     // 1.5 stop bit
+  						3'b1xx:	  counter <= #1 5'b11101;     // 2 stop bits
+						endcase
+					end
 				else
-				if (counter16 == 4'b0001)
+				if (counter == 5'b00001)
 				begin
-					counter16 <= #1 0;
+					counter <= #1 0;
 					state <= #1 s_idle;
 				end
 				else
-					counter16 <= #1 counter16 - 4'b0001;
-				stx_pad_o <= #1 1'b1;
+					counter <= #1 counter - 5'b00001;
+				stx_o_tmp <= #1 1'b1;
 			end
 
 		default : // should never get here
@@ -274,5 +282,7 @@ begin
 	endcase
   end // end if enable
 end // transmitter logic
+
+assign stx_pad_o = lcr[`UART_LC_BC] ? 1'b0 : stx_o_tmp;    // Break condition
 	
 endmodule
