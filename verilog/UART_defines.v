@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.3  2001/05/17 18:34:18  gorban
+// First 'stable' release. Should be sythesizable now. Also added new header.
+//
 // Revision 1.0  2001-05-17 21:27:11+02  jacob
 // Initial revision
 //
@@ -70,19 +73,19 @@
 `define ADDR_WIDTH	3
 
 // Register addresses
-`define REG_RB	0	// receiver buffer
-`define REG_TR  0	// transmitter
-`define REG_IE	1	// Interrupt enable
-`define REG_II  2	// Interrupt identification
-`define REG_FC  2	// FIFO control
-`define REG_LC	3	// Line Control
-`define REG_MC	4	// Modem control
-`define REG_LS  5	// Line status
-`define REG_MS  6	// Modem status
-`define REG_DL1	0	// Divisor latch bytes (1-4)
-`define REG_DL2	1
-`define REG_DL3	4
-`define REG_DL4	5
+`define REG_RB	3'd0	// receiver buffer
+`define REG_TR  3'd0	// transmitter
+`define REG_IE	3'd1	// Interrupt enable
+`define REG_II  3'd2	// Interrupt identification
+`define REG_FC  3'd2	// FIFO control
+`define REG_LC	3'd3	// Line Control
+`define REG_MC	3'd4	// Modem control
+`define REG_LS  3'd5	// Line status
+`define REG_MS  3'd6	// Modem status
+`define REG_DL1	3'd0	// Divisor latch bytes (1-4)
+`define REG_DL2	3'd1
+`define REG_DL3	3'd4
+`define REG_DL4	3'd5
 
 // Interrupt Enable register bits
 `define IE_RDA	0	// Received Data available interrupt

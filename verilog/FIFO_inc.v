@@ -80,6 +80,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.2  2001/05/17 18:34:18  gorban
+// First 'stable' release. Should be sythesizable now. Also added new header.
+//
 // Revision 1.0  2001-05-17 21:27:10+02  jacob
 // Initial revision
 //
@@ -129,7 +132,7 @@ wire [fifo_pointer_w-1:0] top_plus_1 = top + 1;
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
-		push_delay <= #1 0;
+		push_delay <= #1 1'b0;
 	else
 		push_delay <= #1 ~push;
 end
@@ -137,7 +140,7 @@ end
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
-		pop_delay <= #1 0;
+		pop_delay <= #1 1'b0;
 	else
 		pop_delay <= #1 ~pop;
 end
@@ -145,41 +148,41 @@ end
 
 always @(posedge clk or posedge wb_rst_i) // synchronous FIFO
 begin
-	if (wb_rst_i==1)
+	if (wb_rst_i)
 	begin
 		top		<= #1 0;
 		bottom		<= #1 1;
-		underrun	<= #1 0;
-		overrun		<= #1 0;
+		underrun	<= #1 1'b0;
+		overrun		<= #1 1'b0;
 		count		<= #1 0;
-		fifo[0]		<= #1 8'b0;
-		fifo[1]		<= #1 8'b0;
-		fifo[2]		<= #1 8'b0;
-		fifo[3]		<= #1 8'b0;
-		fifo[4]		<= #1 8'b0;
-		fifo[5]		<= #1 8'b0;
-		fifo[6]		<= #1 8'b0;
-		fifo[7]		<= #1 8'b0;
-		fifo[8]		<= #1 8'b0;
-		fifo[9]		<= #1 8'b0;
-		fifo[10]	<= #1 8'b0;
-		fifo[11]	<= #1 8'b0;
-		fifo[12]	<= #1 8'b0;
-		fifo[13]	<= #1 8'b0;
-		fifo[14]	<= #1 8'b0;
-		fifo[15]	<= #1 8'b0;
+		fifo[0]		<= #1 0;
+		fifo[1]		<= #1 0;
+		fifo[2]		<= #1 0;
+		fifo[3]		<= #1 0;
+		fifo[4]		<= #1 0;
+		fifo[5]		<= #1 0;
+		fifo[6]		<= #1 0;
+		fifo[7]		<= #1 0;
+		fifo[8]		<= #1 0;
+		fifo[9]		<= #1 0;
+		fifo[10]	<= #1 0;
+		fifo[11]	<= #1 0;
+		fifo[12]	<= #1 0;
+		fifo[13]	<= #1 0;
+		fifo[14]	<= #1 0;
+		fifo[15]	<= #1 0;
 	end
 	else
 	begin
 		case ({push_rise, pop_rise})
-		2'b00 : begin  // this will never happen, really
-				underrun <= #1 0;
-				overrun  <= #1 0;
+		2'b00 : begin
+				underrun <= #1 1'b0;
+				overrun  <= #1 1'b0;
 	 	        end
 		2'b10 : if (count==fifo_depth)  // overrun condition
 			begin
-				overrun   <= #1 1;
-				underrun  <= #1 0;
+				overrun   <= #1 1'b1;
+				underrun  <= #1 1'b0;
 			end
 			else
 			begin
@@ -191,22 +194,22 @@ begin
 			end
 		2'b01 : if (~|count)
 			begin
-				underrun <= #1 1;  // underrun condition
-				overrun  <= #1 0;
+				underrun <= #1 1'b1;  // underrun condition
+				overrun  <= #1 1'b0;
 			end
 			else
 			begin
 				bottom   <= #1 bottom + 1;
-				underrun <= #1 0;
-				overrun  <= #1 0;
-				count	 <= #1 count -1;
+				underrun <= #1 1'b0;
+				overrun  <= #1 1'b0;
+				count	 <= #1 count - 1;
 			end
 		2'b11 : begin
 				bottom   <= #1 bottom + 1;
 				top       <= #1 top_plus_1;
 				fifo[top_plus_1] <= #1 data_in;
-				underrun <= #1 0;
-				overrun  <= #1 0;
+				underrun <= #1 1'b0;
+				overrun  <= #1 1'b0;
 		        end
 		endcase
 	end

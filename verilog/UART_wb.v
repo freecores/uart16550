@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.2  2001/05/17 18:34:18  gorban
+// First 'stable' release. Should be sythesizable now. Also added new header.
+//
 // Revision 1.0  2001-05-17 21:27:13+02  jacob
 // Initial revision
 //
@@ -109,9 +112,9 @@ reg				wb_ack_o;
 //reg	[`ADDR_WIDTH-1:0]	wb_addr_i;
 always @(posedge clk or posedge wb_rst_i)
 begin
-	if (wb_rst_i == 1)
+	if (wb_rst_i)
 	begin
-		wb_ack_o <= #1 0;
+		wb_ack_o <= #1 1'b0;
 	end
 	else
 	begin

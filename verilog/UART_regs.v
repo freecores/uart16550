@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.5  2001/05/17 18:34:18  gorban
+// First 'stable' release. Should be sythesizable now. Also added new header.
+//
 // Revision 1.0  2001-05-17 21:27:11+02  jacob
 // Initial revision
 //
@@ -186,8 +189,8 @@ always @(posedge clk or posedge wb_rst_i)   // synchrounous reading
     if (wb_rst_i)
     begin
 	wb_dat_o <= #1 8'b0;
-	rf_pop   <= #1 0;
-	lsr_mask  <= #1 0;
+	rf_pop   <= #1 1'b0;
+	lsr_mask  <= #1 1'b0;
     end
     else
     if (~wb_we_i)   //if (we're not writing)
@@ -196,7 +199,7 @@ always @(posedge clk or posedge wb_rst_i)   // synchrounous reading
 			wb_dat_o <= #1 dl[`DL1];
 		  else
 		  begin			
-			rf_pop <= #1 1;  // advance read pointer
+			rf_pop <= #1 1'b1;  // advance read pointer
 			wb_dat_o <= #1 rf_data_out[9:2];
 		  end
 
@@ -208,7 +211,7 @@ always @(posedge clk or posedge wb_rst_i)   // synchrounous reading
 		  else
 		  begin
 			wb_dat_o <= #1 lsr;
-			lsr_mask <= #1 1;
+			lsr_mask <= #1 1'b1;
 		  end
 	`REG_MS	: wb_dat_o <= #1 msr;
 	`REG_DL3: wb_dat_o <= #1 dlab ? dl[`DL3] : 8'b0;
@@ -274,35 +277,35 @@ always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i)
 	begin
 		dl[`DL1]  <= #1 8'b0;
-		tf_push   <= #1 0;
-		start_dlc <= #1 0;
+		tf_push   <= #1 1'b0;
+		start_dlc <= #1 1'b0;
 	end
 	else
 	if (wb_we_i && wb_addr_i==`REG_TR)
 		if (dlab)
 		begin
 			dl[`DL1] <= #1 wb_dat_i;
-			start_dlc <= #1 1; // enable DL counter
-			tf_push <= #1 0;
+			start_dlc <= #1 1'b1; // enable DL counter
+			tf_push <= #1 1'b0;
 		end
 		else
 		begin
-			tf_push   <= #1 1;
-			start_dlc <= #1 0;
+			tf_push   <= #1 1'b1;
+			start_dlc <= #1 1'b0;
 		end
 	else
 	begin
-		start_dlc <= #1 0;
-		tf_push   <= #1 0;
+		start_dlc <= #1 1'b0;
+		tf_push   <= #1 1'b0;
 	end
 
 // Receiver FIFO trigger level selection logic (asynchronous mux)
 always @(fcr[`FC_TL])
 	case (fcr[`FC_TL])
-		2'b00 : trigger_level <= #1 1;
-		2'b01 : trigger_level <= #1 4;
-		2'b10 : trigger_level <= #1 8;
-		2'b11 : trigger_level <= #1 14;
+		2'b00 : trigger_level = 1;
+		2'b01 : trigger_level = 4;
+		2'b10 : trigger_level = 8;
+		2'b11 : trigger_level = 14;
 	endcase
 	
 // DL4 write
@@ -334,13 +337,13 @@ begin
 		lsr <= #1 lsr & 8'b00000001;
 	else
 	begin
-		lsr[0] <= #1 (rf_count!=0);  // data in receiver fifo available
+		lsr[0] <= #1 (rf_count!=4'b0);  // data in receiver fifo available
 		lsr[1] <= #1 rf_overrun;     // Receiver overrun error
 		lsr[2] <= #1 rf_data_out[1]; // parity error bit
 		lsr[3] <= #1 rf_data_out[0]; // framing error bit
-		lsr[4] <= #1 (counter_b==0); // break counter reached 0
-		lsr[5] <= #1 (tf_count==0);  // transmitter fifo is empty
-		lsr[6] <= #1 (tf_count==0 && (state == /*`S_IDLE */ 0)); // transmitter empty
+		lsr[4] <= #1 (counter_b==4'b0); // break counter reached 0
+		lsr[5] <= #1 (tf_count==5'b0);  // transmitter fifo is empty
+		lsr[6] <= #1 (tf_count==5'b0 && (state == /*`S_IDLE */ 0)); // transmitter empty
 		lsr[7] <= #1 rf_error_bit;
 	end
 end
@@ -351,34 +354,34 @@ begin
 	if (wb_rst_i)
 	begin
 		dlc    <= #1 32'hffffff00;
-		enable <= #1 0;
+		enable <= #1 1'b0;
 	end
 	else
 	begin
 		if (start_dlc)
 		begin
-			enable <= #1 0;
+			enable <= #1 1'b0;
 			dlc    <= #1 dl;
 		end
 		else
 		begin
 			if (dl!=32'b0)
 			begin
-				if ( (dlc-1)==0 )
+				if ( (dlc-1)==32'b0 )
 				begin
-					enable <= #1 1;
+					enable <= #1 1'b1;
 					dlc <= #1 dl;
 				end
 				else
 				begin
-					enable <= #1 0;
+					enable <= #1 1'b0;
 					dlc <= #1 dlc - 1;
 				end
 			end
 			else
 			begin
 				dlc <= #1 32'hffffff0A;
-				enable <= #1 0;
+				enable <= #1 1'b0;
 			end
 		end
 	end
@@ -390,30 +393,30 @@ end
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i)
 	begin
-		rls_int  <= #1 0;
-		rda_int  <= #1 0;
-		ti_int   <= #1 0;
-		thre_int <= #1 0;
-		ms_int   <= #1 0;
+		rls_int  <= #1 1'b0;
+		rda_int  <= #1 1'b0;
+		ti_int   <= #1 1'b0;
+		thre_int <= #1 1'b0;
+		ms_int   <= #1 1'b0;
 	end
 	else
 	begin
 		rls_int  <= #1 lsr[`LS_OE] || lsr[`LS_PE] || lsr[`LS_FE] || lsr[`LS_BI];
-		rda_int  <= #1 (rf_count >= trigger_level);
+		rda_int  <= #1 (rf_count >= {1'b0,trigger_level});
 		thre_int <= #1 lsr[`LS_TFE];
 		ms_int   <= #1 | msr[7:4]; // modem interrupt is pending when one of the modem inputs is asserted
-		ti_int   <= #1 (counter_t == 0);
+		ti_int   <= #1 (counter_t == 6'b0);
 	end
 
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)	
-		int_o <= #1 0;
+		int_o <= #1 1'b0;
 	else
 		if (| {rls_int,rda_int,thre_int,ms_int,ti_int})
-			int_o <= #1 1;
+			int_o <= #1 1'b1;
 		else
-			int_o <= #1 0;
+			int_o <= #1 1'b0;
 end
 
 
@@ -426,35 +429,35 @@ begin
 	if (rls_int && ier[`IE_RLS])  // interrupt occured and is enabled  (not masked)
 	begin
 		iir[`II_II] <= #1 `II_RLS;	// set identification register to correct value
-		iir[`II_IP] <= #1 1;		// and set the IIR bit 0 (interrupt pending)
+		iir[`II_IP] <= #1 1'b1;		// and set the IIR bit 0 (interrupt pending)
 	end
 	else
 	if (rda_int && ier[`IE_RDA])
 	begin
 		iir[`II_II] <= #1 `II_RDA;
-		iir[`II_IP] <= #1 1;
+		iir[`II_IP] <= #1 1'b1;
 	end
 	else
 	if (ti_int)  // this interupt is not maskable ???
 	begin
 		iir[`II_II] <= #1 `II_TI;
-		iir[`II_IP] <= #1 1;
+		iir[`II_IP] <= #1 1'b1;
 	end
 	else
 	if (thre_int && ier[`IE_THRE])
 	begin
 		iir[`II_II] <= #1 `II_THRE;
-		iir[`II_IP] <= #1 1;
+		iir[`II_IP] <= #1 1'b1;
 	end
 	else
 	if (ms_int && ier[`IE_MS])
 	begin
 		iir[`II_II] <= #1 `II_MS;
-		iir[`II_IP] <= #1 1;
+		iir[`II_IP] <= #1 1'b1;
 	end
 	else	// no interrupt is pending
 	begin
-		iir[`II_IP] <= #1 0;
+		iir[`II_IP] <= #1 1'b0;
 	end
 end
 

@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.1  2001/05/17 18:34:18  gorban
+// First 'stable' release. Should be sythesizable now. Also added new header.
+//
 // Revision 1.0  2001-05-17 21:27:11+02  jacob
 // Initial revision
 //
@@ -116,44 +119,44 @@ UART_RX_FIFO fifo_rx(clk, wb_rst_i, rf_data_in, rf_data_out,
 defparam fifo_rx.fifo_width = `FIFO_REC_WIDTH;
 
 
-wire		rcounter16_eq_7 = (rcounter16 == 7);
-wire		rcounter16_eq_0 = (rcounter16 == 0);
-wire	[3:0]	rcounter16_minus_1 = rcounter16 - 1;
+wire		rcounter16_eq_7 = (rcounter16 == 4'd7);
+wire		rcounter16_eq_0 = (rcounter16 == 4'd0);
+wire	[3:0]	rcounter16_minus_1 = rcounter16 - 4'd1;
 
-`define SR_IDLE		0
-`define SR_REC_START	1
-`define SR_REC_BIT	2
-`define	SR_REC_PARITY	3
-`define SR_REC_STOP	4
-`define SR_CHECK_PARITY	5
-`define SR_REC_PREPARE	6
-`define SR_END_BIT	7
-`define SR_CALC_PARITY	8
-`define SR_WAIT1	9
-`define SR_PUSH		10
-`define SR_LAST		11
+`define SR_IDLE		4'd0
+`define SR_REC_START	4'd1
+`define SR_REC_BIT	4'd2
+`define	SR_REC_PARITY	4'd3
+`define SR_REC_STOP	4'd4
+`define SR_CHECK_PARITY	4'd5
+`define SR_REC_PREPARE	4'd6
+`define SR_END_BIT	4'd7
+`define SR_CALC_PARITY	4'd8
+`define SR_WAIT1	4'd9
+`define SR_PUSH		4'd10
+`define SR_LAST		4'd11
 
 always @(posedge clk or posedge wb_rst_i)
 begin
   if (wb_rst_i)
   begin
 	rstate		<= #1 `SR_IDLE;
-	rbit_in		<= #1 0;
+	rbit_in		<= #1 1'b0;
 	rcounter16	<= #1 0;
 	rbit_counter	<= #1 0;
-	rparity_xor	<= #1 0;
-	rframing_error	<= #1 0;
-	rparity_error	<= #1 0;
-	rparity		<= #1 0;
+	rparity_xor	<= #1 1'b0;
+	rframing_error	<= #1 1'b0;
+	rparity_error	<= #1 1'b0;
+	rparity		<= #1 1'b0;
 	rshift		<= #1 0;
-	rf_push		<= #1 0;
+	rf_push		<= #1 1'b0;
 	rf_data_in	<= #1 0;
   end
   else
   if (enable)
   begin
 	case (rstate)
-	`SR_IDLE :	if (srx_i==1)   // detected a pulse (start bit?)
+	`SR_IDLE :	if (srx_i==1'b1)   // detected a pulse (start bit?)
 			begin
 				rstate <= #1 `SR_REC_START;
 				rcounter16 <= #1 4'b1110;
@@ -162,7 +165,7 @@ begin
 				rstate <= #1 `SR_IDLE;
 	`SR_REC_START :	begin
 				if (rcounter16_eq_7)    // check the pulse
-					if (srx_i==0)   // no start bit
+					if (srx_i==1'b0)   // no start bit
 						rstate <= #1 `SR_IDLE;
 					else            // start bit detected
 						rstate <= #1 `SR_REC_PREPARE;
@@ -198,18 +201,18 @@ begin
 				rcounter16 <= #1 rcounter16_minus_1;
 			end
 	`SR_END_BIT :   begin
-				if (rbit_counter==0) // no more bits in word
+				if (rbit_counter==3'b0) // no more bits in word
 					if (lcr[`LC_PE]) // choose state based on parity
 						rstate <= #1 `SR_REC_PARITY;
 					else
 					begin
 						rstate <= #1 `SR_REC_STOP;
-						rparity_error <= #1 0;  // no parity - no error :)
+						rparity_error <= #1 1'b0;  // no parity - no error :)
 					end
 				else		// else we have more bits to read
 				begin
 					rstate <= #1 `SR_REC_BIT;
-					rbit_counter <= #1 rbit_counter - 1;
+					rbit_counter <= #1 rbit_counter - 3'b1;
 				end
 				rcounter16 <= #1 4'b1110;
 			end
@@ -254,15 +257,15 @@ begin
 			end
 	`SR_PUSH :	begin
 ///////////////////////////////////////
-				$display($time, ": received: %b", rf_data_in);
-				rf_push    <= #1 1;
+//				$display($time, ": received: %b", rf_data_in);
+				rf_push    <= #1 1'b1;
 				rstate     <= #1 `SR_LAST;
 			end
 	`SR_LAST :	begin
 				if (rcounter16_eq_0)
 					rstate <= #1 `SR_IDLE;
 				rcounter16 <= #1 rcounter16_minus_1;
-				rf_push    <= #1 0;
+				rf_push    <= #1 1'b0;
 			end
 	default : rstate <= #1 `SR_IDLE;
 	endcase
@@ -283,8 +286,8 @@ begin
 		if (srx_i)
 			counter_b <= #1 4'd11; // maximum character time length - 1
 		else
-			if (counter_b != 0)            // break reached
-				counter_b <= #1 counter_b - 1;  // decrement break counter
+			if (counter_b != 4'b0)            // break reached
+				counter_b <= #1 counter_b - 4'd1;  // decrement break counter
 end // always of break condition detection
 
 ///
@@ -297,11 +300,11 @@ begin
 		counter_t <= #1 6'd44;
 	else
 	if (enable)
-		if(rf_push | rf_pop | rda_int) // counter is reset when RX FIFO is accessed or above trigger level
+		if(rf_push || rf_pop || rda_int) // counter is reset when RX FIFO is accessed or above trigger level
 			counter_t <= #1 6'd44;
 		else
-			if (counter_t != 0)  // we don't want to underflow
-				counter_t <= #1 counter_t - 1;		
+			if (counter_t != 6'b0)  // we don't want to underflow
+				counter_t <= #1 counter_t - 6'd1;		
 end
 	
 endmodule

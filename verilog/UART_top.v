@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.2  2001/05/17 18:34:18  gorban
+// First 'stable' release. Should be sythesizable now. Also added new header.
+//
 // Revision 1.0  2001-05-17 21:27:12+02  jacob
 // Initial revision
 //
@@ -122,7 +125,7 @@ wire	[7:0]	wb_dat_o;
 wire		we_o;	// Write enable for registers
 
 wire	[3:0]	ier;
-wire	[7:0]	iir;
+wire	[3:0]	iir;
 wire	[3:0]	fcr;  /// bits 7,6,2,1 of fcr. Other bits are ignored
 wire	[4:0]	mcr;
 wire	[7:0]	lcr;
