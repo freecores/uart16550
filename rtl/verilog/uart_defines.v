@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.10  2001/12/11 08:55:40  mohor
+// Scratch register define added.
+//
 // Revision 1.9  2001/12/03 21:44:29  gorban
 // Updated specification documentation.
 // Added full 32-bit data bus interface, now as default.
@@ -110,6 +113,8 @@
 // in new mode (32bit bus), the wb_sel_i signal is used to pus data in correct place
 // also, in 8-bit version there'll be no debugging features included
 // `define DATA_BUS_WIDTH_8
+
+`define BIG_BYTE_ENDIAN     // Defines endian
 
 `ifdef DATA_BUS_WIDTH_8
  `define UART_ADDR_WIDTH 3

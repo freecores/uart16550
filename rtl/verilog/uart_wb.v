@@ -64,6 +64,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.13  2002/02/07 16:20:20  gorban
+// major bug in 32-bit mode that prevented register access fixed.
+//
 // Revision 1.12  2001/12/19 08:03:34  mohor
 // Warnings cleared.
 //
@@ -262,10 +265,17 @@ always @(wb_sel_is or wb_dat_is)
 reg [1:0] adr2 ; // lower 2 bits of regenerated address
 always @(wb_sel_is)
 	case (wb_sel_is)
+    `ifdef BIG_BYTE_ENDIAN
+		4'b0001 : adr2 = 2'b11;
+		4'b0010 : adr2 = 2'b10;
+		4'b0100 : adr2 = 2'b01;
+		4'b1000 : adr2 = 2'b00;
+    `else
 		4'b0001 : adr2 = 2'b00;
 		4'b0010 : adr2 = 2'b01;
 		4'b0100 : adr2 = 2'b10;
 		4'b1000 : adr2 = 2'b11;
+    `endif
 		default : adr2 = 2'b0;
 	endcase // case(wb_sel_is)
 		
