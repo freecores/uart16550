@@ -63,6 +63,15 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.18  2001/12/03 21:44:29  gorban
+// Updated specification documentation.
+// Added full 32-bit data bus interface, now as default.
+// Address is 5-bit wide in 32-bit data bus mode.
+// Added wb_sel_i input to the core. It's used in the 32-bit mode.
+// Added debug interface with two 32-bit read-only registers in 32-bit mode.
+// Bits 5 and 6 of LSR are now only cleared on TX FIFO write.
+// My small test bench is modified to work with 32-bit mode.
+//
 // Revision 1.17  2001/11/28 19:36:39  gorban
 // Fixed: timeout and break didn't pay attention to current data format when counting time
 //
@@ -136,7 +145,7 @@
 `include "uart_defines.v"
 
 module uart_receiver (clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
-	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate);
+	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate, rf_push);
 
 input				clk;
 input				wb_rst_i;
@@ -154,6 +163,7 @@ output	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_out;
 output				rf_overrun;
 output				rf_error_bit;
 output [3:0] 		rstate;
+output 				rf_push;
 
 reg	[3:0]	rstate;
 reg	[3:0]	rcounter16;

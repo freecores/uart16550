@@ -64,6 +64,15 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.15  2001/12/03 21:44:29  gorban
+// Updated specification documentation.
+// Added full 32-bit data bus interface, now as default.
+// Address is 5-bit wide in 32-bit data bus mode.
+// Added wb_sel_i input to the core. It's used in the 32-bit mode.
+// Added debug interface with two 32-bit read-only registers in 32-bit mode.
+// Bits 5 and 6 of LSR are now only cleared on TX FIFO write.
+// My small test bench is modified to work with 32-bit mode.
+//
 // Revision 1.14  2001/11/07 17:51:52  gorban
 // Heavily rewritten interrupt and LSR subsystems.
 // Many bugs hopefully squashed.
@@ -160,6 +169,7 @@ wire [7:0] 							 wb_dat8_i; // 8-bit internal data input
 wire [7:0] 							 wb_dat8_o; // 8-bit internal data output
 wire [31:0] 						 wb_dat32_o; // debug interface 32-bit output
 wire [3:0] 							 wb_sel_i;  // WISHBONE select signal
+wire [uart_addr_width-1:0] 	 wb_adr_int;
 wire 									 we_o;	// Write enable for registers
 wire		          	     re_o;	// Read enable for registers
 //
@@ -197,6 +207,8 @@ uart_wb		wb_interface(
 		.wb_stb_i(	wb_stb_i	),
 		.wb_cyc_i(	wb_cyc_i	),
 		.wb_ack_o(	wb_ack_o	),
+	.wb_adr_i(wb_adr_i),
+	.wb_adr_int(wb_adr_int),
 		.we_o(		we_o		),
 		.re_o(re_o)
 		);
@@ -214,6 +226,8 @@ uart_wb		wb_interface(
 		.wb_stb_i(	wb_stb_i	),
 		.wb_cyc_i(	wb_cyc_i	),
 		.wb_ack_o(	wb_ack_o	),
+	.wb_adr_i(wb_adr_i),
+	.wb_adr_int(wb_adr_int),
 		.we_o(		we_o		),
 		.re_o(re_o)
 		);
@@ -223,7 +237,7 @@ uart_wb		wb_interface(
 uart_regs	regs(
 	.clk(		wb_clk_i		),
 	.wb_rst_i(	wb_rst_i	),
-	.wb_addr_i(	wb_adr_i	),
+	.wb_addr_i(	wb_adr_int	),
 	.wb_dat_i(	wb_dat8_i	),
 	.wb_dat_o(	wb_dat8_o	),
 	.wb_we_i(	we_o		),
@@ -260,7 +274,7 @@ uart_debug_if dbg(/*AUTOINST*/
 						// Inputs
 						.wb_clk_i				 (wb_clk_i),
 						.wb_rst_i				 (wb_rst_i),
-						.wb_adr_i				 (wb_adr_i[`UART_ADDR_WIDTH-1:0]),
+						.wb_adr_i				 (wb_adr_int[`UART_ADDR_WIDTH-1:0]),
 						.re_o						 (re_o),
 						.ier						 (ier[3:0]),
 						.iir						 (iir[3:0]),

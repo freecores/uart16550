@@ -62,6 +62,15 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.26  2001/12/03 21:44:29  gorban
+// Updated specification documentation.
+// Added full 32-bit data bus interface, now as default.
+// Address is 5-bit wide in 32-bit data bus mode.
+// Added wb_sel_i input to the core. It's used in the 32-bit mode.
+// Added debug interface with two 32-bit read-only registers in 32-bit mode.
+// Bits 5 and 6 of LSR are now only cleared on TX FIFO write.
+// My small test bench is modified to work with 32-bit mode.
+//
 // Revision 1.25  2001/11/28 19:36:39  gorban
 // Fixed: timeout and break didn't pay attention to current data format when counting time
 //
@@ -288,7 +297,7 @@ uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_
 
 // Receiver Instance
 uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
-	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate);
+	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate, rf_push);
 
 
 // Asynchronous reading here because the outputs are sampled in uart_wb.v file 
@@ -364,20 +373,6 @@ begin
 		msi_reset <= #1 1; // reset bits in Modem Status Register
 end
 
-/*
-// threi_clear signal handling
-always @(posedge clk or posedge wb_rst_i)
-begin
-	if (wb_rst_i)
-		threi_clear <= #1 0;
-	else
-	if (!lsr[`UART_LS_TFE] && (tf_count==0)) // reset clear flag when tx fifo clears
-		threi_clear <= #1 0;
-	else
-	if (wb_re_i && wb_addr_i == `UART_REG_II)
-		threi_clear <= #1 1;
-end
-*/
 
 //
 //   WRITES AND RESETS   //
@@ -486,7 +481,7 @@ end
 // Line Status Register
 
 // activation conditions
-assign lsr0 = (rf_count==0 && fifo_write);  // data in receiver fifo available set condition
+assign lsr0 = (rf_count==0 && rf_push);  // data in receiver fifo available set condition
 assign lsr1 = rf_overrun;     // Receiver overrun error
 assign lsr2 = rf_data_out[1]; // parity error bit
 assign lsr3 = rf_data_out[0]; // framing error bit
@@ -553,8 +548,6 @@ always @(posedge clk or posedge wb_rst_i)
 
 // lsr bit 5 (transmitter fifo is empty)
 reg lsr5_d;
-wire tx_fifo_write;
-assign tx_fifo_write = (wb_we_i && ~dlab && wb_addr_i==`UART_REG_TR);
 
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i) lsr5_d <= #1 1;
@@ -562,7 +555,7 @@ always @(posedge clk or posedge wb_rst_i)
 
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i) lsr5r <= #1 1;
-	else lsr5r <= #1 (tx_fifo_write) ? 0 :  lsr5r || (lsr5 && ~lsr5_d);
+	else lsr5r <= #1 (fifo_write) ? 0 :  lsr5r || (lsr5 && ~lsr5_d);
 
 // lsr bit 6 (transmitter empty indicator)
 reg lsr6_d;
@@ -573,7 +566,7 @@ always @(posedge clk or posedge wb_rst_i)
 
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i) lsr6r <= #1 1;
-	else lsr6r <= #1 (tx_fifo_write) ? 0 : lsr6r || (lsr6 && ~lsr6_d);
+	else lsr6r <= #1 (fifo_write) ? 0 : lsr6r || (lsr6 && ~lsr6_d);
 
 // lsr bit 7 (error in fifo)
 reg lsr7_d;
