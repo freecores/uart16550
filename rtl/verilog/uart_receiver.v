@@ -405,7 +405,7 @@ begin
       		  rf_push 		  <= #1 1'b1;
     				rstate        <= #1 sr_idle;
           end
-        else
+        else if(~rframing_error)  // There's always a framing before break_error -> wait for break or srx_pad_i
           begin
        			rf_data_in  <= #1 {rshift, 1'b0, rparity_error, rframing_error};
       		  rf_push 		  <= #1 1'b1;
