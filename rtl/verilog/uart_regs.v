@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.28  2001/12/10 19:52:41  gorban
+// Scratch register added
+//
 // Revision 1.27  2001/12/06 14:51:04  gorban
 // Bug in LSR[0] is fixed.
 // All WISHBONE signals are now sampled, so another wait-state is introduced on all transfers.
@@ -507,7 +510,7 @@ always @(posedge clk or posedge wb_rst_i)
 
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i) lsr0r <= #1 0;
-	else lsr0r <= #1 (rf_count==1 && fifo_read) ? 0 : // deassert condition
+	else lsr0r <= #1 (rf_count==1 && fifo_read || rx_reset) ? 0 : // deassert condition
 					  lsr0r || (lsr0 && ~lsr0_d); // set on rise of lsr0 and keep asserted until deasserted 
 
 // lsr bit 1 (receiver overrun)
