@@ -63,6 +63,11 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.15  2001/12/17 14:46:48  mohor
+// overrun signal was moved to separate block because many sequential lsr
+// reads were preventing data from being written to rx fifo.
+// underrun signal was not used and was removed from the project.
+//
 // Revision 1.14  2001/12/03 21:44:29  gorban
 // Updated specification documentation.
 // Added full 32-bit data bus interface, now as default.
@@ -319,6 +324,8 @@ begin
 			tstate <= #1 s_idle;
 	endcase
   end // end if enable
+  else
+    tf_pop <= #1 1'b0;  // tf_pop must be 1 cycle width
 end // transmitter logic
 
 assign stx_pad_o = lcr[`UART_LC_BC] ? 1'b0 : stx_o_tmp;    // Break condition
