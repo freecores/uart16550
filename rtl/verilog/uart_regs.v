@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.11  2001/10/18 20:35:45  gorban
+// small fix
+//
 // Revision 1.10  2001/08/24 21:01:12  mohor
 // Things connected to parity changed.
 // Clock devider changed.
@@ -204,7 +207,7 @@ uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_
 uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
 	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, rx_lsr_mask);
 
-/*
+
 always @(posedge clk or posedge wb_rst_i)   // synchrounous reading
 begin
     if (wb_rst_i)
@@ -228,8 +231,8 @@ begin
     else
 	wb_dat_o <= #1 8'b0;
 end
-*/
 
+/*
 always @(wb_addr_i or dlab or dl or rf_data_out or ier or iir or lcr or lsr or msr)
 begin
 	case (wb_addr_i)
@@ -245,6 +248,7 @@ begin
 	default:  wb_dat_o <= 8'b0; // ??
 	endcase
 end
+*/
 
 // rf_pop signal handling
 always @(posedge clk or posedge wb_rst_i)
