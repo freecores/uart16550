@@ -77,7 +77,7 @@
 `include "timescale.v"
 module uart_test ();
 
-//`include "uart_defines.v"
+`include "uart_defines.v"
 
 reg				clkr;
 reg				wb_rst_ir;
