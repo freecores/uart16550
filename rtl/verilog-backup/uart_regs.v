@@ -85,7 +85,7 @@
 //
 
 `include "timescale.v"
-//`include "uart_defines.v"
+`include "uart_defines.v"
 
 `define UART_DL1 7:0
 `define UART_DL2 15:8

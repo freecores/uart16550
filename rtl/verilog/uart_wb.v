@@ -83,6 +83,7 @@
 // Company: Flextronics Semiconductor
 //
 
+`include "uart_defines.v"
 `include "timescale.v"
 
 module uart_wb (clk,

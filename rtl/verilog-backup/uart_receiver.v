@@ -86,7 +86,7 @@
 //
 
 `include "timescale.v"
-//`include "uart_defines.v"
+`include "uart_defines.v"
 
 module uart_receiver (clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
 	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset);

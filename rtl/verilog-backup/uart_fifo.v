@@ -78,7 +78,7 @@
 //
 
 `include "timescale.v"
-//`include "uart_defines.v"
+`include "uart_defines.v"
 
 module uart_fifo (clk, 
 	wb_rst_i, data_in, data_out,
