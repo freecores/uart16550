@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.7  2001/05/27 17:37:49  gorban
+// Fixed many bugs. Updated spec. Changed FIFO files structure. See CHANGES.txt file.
+//
 // Revision 1.6  2001/05/21 19:12:02  gorban
 // Corrected some Linter messages.
 //
@@ -195,20 +198,14 @@ begin
     if (wb_rst_i)
     begin
 	wb_dat_o <= #1 8'b0;
-	rf_pop   <= #1 1'b0;
-	lsr_mask  <= #1 1'b0;
     end
     else
-    if (~wb_we_i)   //if (we're not writing)
+    if (!wb_we_i)   //if (we're not writing)
 	case (wb_addr_i)
 	`REG_RB : if (dlab) // Receiver FIFO or DL byte 1
 			wb_dat_o <= #1 dl[`DL1];
 		  else
-		  begin			
-			rf_pop <= #1 1'b1;  // advance read pointer
 			wb_dat_o <= #1 rf_data_out[9:2];
-		  end
-
 	`REG_IE	: wb_dat_o <= #1 dlab ? dl[`DL2] : ier;
 	`REG_II	: begin
 			wb_dat_o <= #1 {4'b1100,iir};
@@ -218,10 +215,7 @@ begin
 	`REG_LS	: if (dlab)
 			wb_dat_o <= #1 dl[`DL4];
 		  else
-		  begin
 			wb_dat_o <= #1 lsr;
-			lsr_mask <= #1 1'b1;
-		  end
 	`REG_MS	: begin
 			wb_dat_o <= #1 msr;
 			msi_reset <= #1 1; // clear the modem status interrupt
@@ -232,27 +226,65 @@ begin
 	endcase
     else
 	wb_dat_o <= #1 8'b0;
+end
 
-// Reset flags after one clock
-    if (rf_pop)
-	rf_pop <= #1 0;
-    if (lsr_mask)
-	lsr_mask <= #1 0;
-    if (msi_reset)
-	msi_reset <= #1 0;
-    if (threi_clear && !lsr[`LS_TFE] && (tf_count==0)) // reset clear flag when tx fifo clears
-	threi_clear <= #1 0;
-	
-    
+// rf_pop signal handling
+always @(posedge clk or posedge wb_rst_i)
+begin
+	if (wb_rst_i)
+		rf_pop <= #1 0; 
+	else
+	if (rf_pop)	// restore the signal to 0 after one clock cycle
+		rf_pop <= #1 0;
+	else
+	if (!wb_we_i && wb_addr_i == `REG_RB && !dlab)
+		rf_pop <= #1 1; // advance read pointer
+end
 
+// lsr_mask signal handling
+always @(posedge clk or posedge wb_rst_i)
+begin
+	if (wb_rst_i)
+		lsr_mask <= #1 0;
+	else
+	if (lsr_mask)
+		lsr_mask <= #1 0;
+	else
+	if (!wb_we_i && wb_addr_i == `REG_LS && !dlab)
+		lsr_mask <= #1 1; // reset bits in the Line Status Register
+end
 
+// msi_reset signal handling
+always @(posedge clk or posedge wb_rst_i)
+begin
+	if (wb_rst_i)
+		msi_reset <= #1 0;
+	else
+	if (msi_reset)
+		msi_reset <= #1 0;
+	else
+	if (!wb_we_i && wb_addr_i == `REG_MS)
+		msi_reset <= #1 1; // reset bits in Modem Status Register
+end
+
+// threi_clear signal handling
+always @(posedge clk or posedge wb_rst_i)
+begin
+	if (wb_rst_i)
+		threi_clear <= #1 0;
+	else
+	if (threi_clear && !lsr[`LS_TFE] && (tf_count==0)) // reset clear flag when tx fifo clears
+		threi_clear <= #1 0;
+	else
+	if (!wb_we_i && wb_addr_i == `REG_II)
+		threi_clear <= #1 1; // reset bits in Modem Status Register
 end
 
 //
 //   WRITES AND RESETS   //
 //
 // Line Control Register
-always @(posedge clk)
+always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i)
 		lcr <= #1 8'b00000011; // 8n1 setting
 	else
@@ -347,11 +379,15 @@ always @(posedge clk or posedge wb_rst_i)
 //
 
 // Modem Status Register
-always @(posedge clk)
+always @(posedge clk or posedge wb_rst_i)
 begin
-	msr[`MS_DDCD:`MS_DCTS] <= #1 msi_reset ? 4'b0 :
-		msr[`MS_DDCD:`MS_DCTS] | ({dcd, ri, dsr, cts} ^ msr[`MS_CDCD:`MS_CCTS]);
-	msr[`MS_CDCD:`MS_CCTS] <= #1 {dcd, ri, dsr, cts};
+	if (wb_rst_i)
+		msr <= #1 0;
+	else begin
+		msr[`MS_DDCD:`MS_DCTS] <= #1 msi_reset ? 4'b0 :
+			msr[`MS_DDCD:`MS_DCTS] | ({dcd, ri, dsr, cts} ^ msr[`MS_CDCD:`MS_CCTS]);
+		msr[`MS_CDCD:`MS_CCTS] <= #1 {dcd, ri, dsr, cts};
+	end
 end
 
 // Line Status Register

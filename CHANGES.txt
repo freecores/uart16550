@@ -1,7 +1,9 @@
 Note: This Changes file is being maintained since 25.5.2001.
 
-27.05.2001
+27.05.2001 (release 1.7)
 ~~~~~~~~~~
+
+Thanks to Rick Wright for pointing me many of my bugs.
 
 * Fixed the rf_pop and lsr_mask flags not being deasserted.
 * Fixed Time-Out interrupt not being masked by bit 0 in IER
@@ -16,4 +18,12 @@ Note: This Changes file is being maintained since 25.5.2001.
 * Removed FIFO_inc.v from CVS tree.
 
 * Updated specifications .pdf file
+
+29.05.2001 (release 1.8)
+~~~~~~~~~~
+
+* Fixed: Line Control Register block didn't have wb_rst_i in its sensitivity list
+* Fixed: Modem Status Register block didn't have wb_rst_i in its sensitivity list and didn't set reset value
+* Fixed rf_pop, lsr_mask, msi_reset and threi_clear not being synthesizable in release 1.7. (Thanks 
+	to Pavel Korenski for pointing this to me)
 
