@@ -179,7 +179,7 @@ always @(posedge clk or posedge wb_rst_i)
 		if (dlab)
 		begin
 			dl[`DL2] <= #1 wb_dat_i;
-			dlc <= #1 dl;  // reset the counter to dl value
+//			dlc <= #1 dl;  // reset the counter to dl value
 		end
 		else
 			ier <= #1 wb_dat_i[3:0]; // ier uses only 4 lsb
@@ -202,7 +202,7 @@ always @(posedge clk or posedge wb_rst_i)
 		if (dlab)
 		begin
 			dl[`DL3] <= #1 wb_dat_i;
-			dlc <= #1 dl;
+//			dlc <= #1 dl;
 		end
 		else
 			mcr <= #1 wb_dat_i[4:0];
@@ -262,7 +262,7 @@ always @(posedge clk)
 	if (!wb_rst_i && wb_we_i && wb_addr_i==`REG_DL4)
 	begin
 		dl[`DL4] <= #1 wb_dat_i;
-		dlc <= #1 dl;
+//		dlc <= #1 dl;
 	end
 
 //
@@ -280,6 +280,12 @@ end
 always @(posedge wb_rst_i)
 	dl <= #1 32'b0;
 
+always @(posedge wb_rst_i)
+begin
+	dlc <= #1 32'hffffffff;  // no enable signal will be generated
+end
+
+
 // Line Status Register is after the transmitter
 
 // Enable signal generation logic
@@ -290,6 +296,8 @@ begin
 			dlc <= #1 dl;
 		else
 			dlc <= #1 dlc - 1;  // decrease count
+	else
+		dlc <= #1 32'hffffffff;	// so that no enable signal will be generated
 end
 
 always @(dlc)

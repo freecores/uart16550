@@ -1,8 +1,11 @@
 TODO:
 (+ done, ! working)
 
-! * Interrupts
-! * Status registers
++ * Interrupts
++ * Status registers
 + * Break detection
 + * RX fifo overrun detection
-  * Timeout detection
++ * Timeout detection
+
+* Test bench
+* more checking
