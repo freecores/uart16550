@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.15  2001/10/31 15:19:22  gorban
+// Fixes to break and timeout conditions
+//
 // Revision 1.14  2001/10/29 17:00:46  gorban
 // fixed parity sending and tx_fifo resets over- and underrun
 //
