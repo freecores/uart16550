@@ -64,6 +64,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.11  2001/11/07 17:51:52  gorban
+// Heavily rewritten interrupt and LSR subsystems.
+// Many bugs hopefully squashed.
+//
 // Revision 1.10  2001/10/20 09:58:40  gorban
 // Small synopsis fixes
 //
@@ -160,7 +164,7 @@ reg				pop_delay;
 wire				push_rise = push_delay & push;
 wire				pop_rise  = pop_delay  & pop;
 
-wire [fifo_pointer_w-1:0] top_plus_1 = top + 1;
+wire [fifo_pointer_w-1:0] top_plus_1 = top + 1'b1;
 
 always @(posedge clk or posedge wb_rst_i)
 begin
@@ -184,7 +188,6 @@ begin
 	if (wb_rst_i)
 	begin
 		top		<= #1 0;
-//		bottom		<= #1 1; igor
 		bottom		<= #1 1'b0;
 		underrun	<= #1 1'b0;
 		overrun		<= #1 1'b0;
@@ -209,7 +212,6 @@ begin
 	else
 	if (fifo_reset) begin
 		top		<= #1 0;
-//		bottom		<= #1 1; igor
 		bottom		<= #1 1'b0;
 		underrun	<= #1 1'b0;
 		overrun		<= #1 1'b0;
@@ -226,7 +228,6 @@ begin
 		case ({push_rise, pop_rise})
 		2'b00 : begin
 				underrun <= #1 1'b0;
-//				overrun  <= #1 1'b0;// Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
 	 	        end
 		2'b10 : if (count==fifo_depth)  // overrun condition
 			begin
@@ -236,34 +237,28 @@ begin
 			else
 			begin
 				top       <= #1 top_plus_1;
-//				fifo[top_plus_1] <= #1 data_in; igor
 				fifo[top] <= #1 data_in;
-//				overrun   <= #1 0;// Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
 				overrun   <= #1 0;
-				count     <= #1 count + 1;
+				count     <= #1 count + 1'b1;
 			end
 		2'b01 : if (~|count) // underrun
 			begin
-//				overrun  <= #1 1'b0;  Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
 				overrun  <= #1 1'b0;
 				underrun <= #1 1'b1;
 			end
 			else
 			begin
         fifo[bottom] <= #1 0;
-				bottom   <= #1 bottom + 1;
-//				overrun  <= #1 1'b0;  Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
+				bottom   <= #1 bottom + 1'b1;
 				overrun  <= #1 1'b0;
-				count	 <= #1 count - 1;
+				count	 <= #1 count - 1'b1;
 			end
 		2'b11 : begin
         fifo[bottom] <= #1 0;
-				bottom   <= #1 bottom + 1;
+				bottom   <= #1 bottom + 1'b1;
 				top       <= #1 top_plus_1;
-//				fifo[top_plus_1] <= #1 data_in; igor
 				fifo[top] <= #1 data_in;
 				underrun <= #1 1'b0;
-//				overrun  <= #1 1'b0;  Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
 		        end
 		endcase
 	end

@@ -63,6 +63,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.12  2001/11/07 17:51:52  gorban
+// Heavily rewritten interrupt and LSR subsystems.
+// Many bugs hopefully squashed.
+//
 // Revision 1.11  2001/10/29 17:00:46  gorban
 // fixed parity sending and tx_fifo resets over- and underrun
 //
@@ -231,7 +235,7 @@ begin
 					state <= #1 s_send_byte;
 				end
 				else
-					counter <= #1 counter - 5'b00001;
+					counter <= #1 counter - 1'b1;
 				stx_o_tmp <= #1 1'b0;
 			end
 	s_send_byte :	begin
@@ -242,7 +246,7 @@ begin
 				begin
 					if (bit_counter > 3'b0)
 					begin
-						bit_counter <= #1 bit_counter - 1;
+						bit_counter <= #1 bit_counter - 1'b1;
 						{shift_out[5:0],bit_out  } <= #1 {shift_out[6:1], shift_out[0]};
 						state <= #1 s_send_byte;
 					end
@@ -264,7 +268,7 @@ begin
 					counter <= #1 0;
 				end
 				else
-					counter <= #1 counter - 5'b00001;
+					counter <= #1 counter - 1'b1;
 				stx_o_tmp <= #1 bit_out; // set output pin
 			end
 	s_send_parity :	begin
@@ -277,7 +281,7 @@ begin
 					state <= #1 s_send_stop;
 				end
 				else
-					counter <= #1 counter - 5'b00001;
+					counter <= #1 counter - 1'b1;
 				stx_o_tmp <= #1 bit_out;
 			end
 	s_send_stop :  begin
@@ -296,7 +300,7 @@ begin
 					state <= #1 s_idle;
 				end
 				else
-					counter <= #1 counter - 5'b00001;
+					counter <= #1 counter - 1'b1;
 				stx_o_tmp <= #1 1'b1;
 			end
 

@@ -63,6 +63,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.12  2001/11/07 17:51:52  gorban
+// Heavily rewritten interrupt and LSR subsystems.
+// Many bugs hopefully squashed.
+//
 // Revision 1.11  2001/10/31 15:19:22  gorban
 // Fixes to break and timeout conditions
 //
@@ -115,7 +119,7 @@ module uart_receiver (clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
 
 input				clk;
 input				wb_rst_i;
-input	[7:0]			lcr;
+input	[7:0]	lcr;
 input				rf_pop;
 input				srx_pad_i;
 input				enable;
@@ -170,7 +174,7 @@ wire 		rcounter16_eq_7 = (rcounter16 == 4'd7);
 wire		rcounter16_eq_0 = (rcounter16 == 4'd0);
 wire		rcounter16_eq_1 = (rcounter16 == 4'd1);
 
-wire [3:0] rcounter16_minus_1 = rcounter16 - 4'd1;
+wire [3:0] rcounter16_minus_1 = rcounter16 - 1'b1;
 
 parameter  sr_idle 					= 4'd0;
 parameter  sr_rec_start 			= 4'd1;
@@ -210,8 +214,6 @@ begin
 				rstate <= #1 sr_rec_start;
 				rcounter16 <= #1 4'b1110;
 			end
-			else
-				rstate <= #1 sr_idle;
 	sr_rec_start :	begin
 				if (rcounter16_eq_7)    // check the pulse
 					if (srx_pad_i==1'b1)   // no start bit
@@ -261,7 +263,7 @@ begin
 				else		// else we have more bits to read
 				begin
 					rstate <= #1 sr_rec_bit;
-					rbit_counter <= #1 rbit_counter - 3'b1;
+					rbit_counter <= #1 rbit_counter - 1'b1;
 				end
 				rcounter16 <= #1 4'b1110;
 			end
@@ -276,7 +278,6 @@ begin
 	sr_ca_lc_parity : begin    // rcounter equals 6
 				rcounter16  <= #1 rcounter16_minus_1;
 				rparity_xor <= #1 ^{rshift,rparity}; // calculate parity on all incoming data
-//				rparity_xor <= #1 ^rshift; // calculate parity on all incoming data
 				rstate      <= #1 sr_check_parity;
 			  end
 	sr_check_parity: begin	  // rcounter equals 5
@@ -300,7 +301,6 @@ begin
 				if (rcounter16_eq_7)	// read the parity
 				begin
 					rframing_error <= #1 !srx_pad_i; // no framing error if input is 1 (stop bit)
-//					rf_data_in <= #1 {rshift, rparity_error, rframing_error};         prestavljeno navzdol
 					rstate <= #1 sr_push;
 				end
 				rcounter16 <= #1 rcounter16_minus_1;
@@ -308,7 +308,7 @@ begin
 	sr_push :	begin
 ///////////////////////////////////////
 //				$display($time, ": received: %b", rf_data_in);
-  			rf_data_in <= #1 {rshift, rparity_error, rframing_error};   // igor !!! Nisem preprican, da sem to prestavil sem OK.
+  			rf_data_in <= #1 {rshift, rparity_error, rframing_error};
 				rf_push    <= #1 1'b1;
 				rstate     <= #1 sr_last;
 			end
@@ -333,12 +333,15 @@ begin
 	if (wb_rst_i)
 		counter_b <= #1 8'd191;
 	else
+  if(lsr_mask)
+		counter_b <= #1 8'd191;
+  else
 	if (enable)  // only work on enable times
-		if (!srx_pad_i || rstate == sr_idle)
+		if (srx_pad_i)
 			counter_b <= #1 8'd191; // maximum character time length - 1
 		else
-			if (counter_b != 8'b0)            // break not reached it
-				counter_b <= #1 counter_b - 8'd1;  // decrement break counter
+  	if (counter_b != 8'b0)            // break not reached it
+		  counter_b <= #1 counter_b - 1;  // decrement break counter
 end // always of break condition detection
 
 ///
@@ -353,8 +356,8 @@ begin
 		if(rf_push || rf_pop || rda_int || rf_count == 0) // counter is reset when RX FIFO is empty, accessed or above trigger level
 			counter_t <= #1 10'd767;
 		else
-			if (	enable && counter_t != 10'b0)  // we don't want to underflow
-				counter_t <= #1 counter_t - 10'd1;		
+		if (enable && counter_t != 10'b0)  // we don't want to underflow
+			counter_t <= #1 counter_t - 1;		
 end
 	
 endmodule

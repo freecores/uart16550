@@ -62,6 +62,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.17  2001/11/07 17:51:52  gorban
+// Heavily rewritten interrupt and LSR subsystems.
+// Many bugs hopefully squashed.
+//
 // Revision 1.16  2001/11/02 09:55:16  mohor
 // no message
 //
@@ -254,7 +258,7 @@ begin
 	`UART_REG_MS	: wb_dat_o <= #1 msr;
 	default:  wb_dat_o <= #1 8'b0; // ??
 	endcase // case(wb_addr_i)
-    else
+     else
 	wb_dat_o <= #1 8'b0;
 end // always @ (posedge clk or posedge wb_rst_i)
 
@@ -674,6 +678,7 @@ begin
 		iir[`UART_II_IP] <= #1 1'b0;
 	end else	// no interrupt is pending
 	begin
+		iir[`UART_II_II] <= #1 1'b0;
 		iir[`UART_II_IP] <= #1 1'b1;
 	end
 end
