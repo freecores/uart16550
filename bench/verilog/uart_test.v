@@ -77,7 +77,7 @@
 `include "timescale.v"
 module uart_test ();
 
-`include "uart_defines.v"
+//`include "uart_defines.v"
 
 reg				clkr;
 reg				wb_rst_ir;
@@ -103,6 +103,11 @@ uart_top	uart_snd(
 
 	// modem signals
 	rts_o, cts_i, dtr_o, dsr_i, ri_i, dcd_i
+`ifdef UART_HAS_BAUDRATE_OUTPUT
+	, baud1_o
+`endif
+
+
 
 	);
 
@@ -130,6 +135,9 @@ uart_top	uart_rcv(
 
 	// modem signals
 	rts1_o, cts1_i, dtr1_o, dsr1_i, ri1_i, dcd1_i
+`ifdef UART_HAS_BAUDRATE_OUTPUT
+	, baud2_o
+`endif
 
 	);
 

@@ -5,6 +5,5 @@
 +tcl+../bin/sim.tcl
 -y ../../../rtl/verilog
 -y ../../../bench/verilog
-../../../rtl/verilog/uart_defines.v
 ../../../bench/verilog/uart_test.v
 //+gui

@@ -1,5 +1,10 @@
 Note: This Changes file is being maintained since 25.5.2001.
 
+29.07.2002
+~~~~~~~~~~
+Reverted to have uart_defines.v file to be included in the verilog
+files. It seems that it's been a bad idea in the first place.
+
 22.07.2002
 ~~~~~~~~~~
 Notice that this file hasn't been updated for a while so not all changed are present.
