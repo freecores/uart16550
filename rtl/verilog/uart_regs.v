@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.41  2004/05/21 11:44:41  tadejm
+// Added synchronizer flops for RX input.
+//
 // Revision 1.40  2003/06/11 16:37:47  gorban
 // This fixes errors in some cases when data is being read and put to the FIFO at the same time. Patch is submitted by Scott Furman. Update is very recommended.
 //
@@ -747,7 +750,7 @@ assign rls_int  = ier[`UART_IE_RLS] && (lsr[`UART_LS_OE] || lsr[`UART_LS_PE] || 
 assign rda_int  = ier[`UART_IE_RDA] && (rf_count >= {1'b0,trigger_level});
 assign thre_int = ier[`UART_IE_THRE] && lsr[`UART_LS_TFE];
 assign ms_int   = ier[`UART_IE_MS] && (| msr[3:0]);
-assign ti_int   = ier[`UART_IE_RDA] && (counter_t == 10'b0);
+assign ti_int   = ier[`UART_IE_RDA] && (counter_t == 10'b0) && (|rf_count);
 
 reg 	 rls_int_d;
 reg 	 thre_int_d;
