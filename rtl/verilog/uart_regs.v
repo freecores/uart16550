@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.12  2001/10/19 16:21:40  gorban
+// Changes data_out to be synchronous again as it should have been.
+//
 // Revision 1.11  2001/10/18 20:35:45  gorban
 // small fix
 //
@@ -100,7 +103,10 @@
 //
 //
 
+// synopsys translate_off
 `include "timescale.v"
+// synopsys translate_on
+
 `include "uart_defines.v"
 
 `define UART_DL1 7:0

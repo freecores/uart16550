@@ -64,6 +64,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.9  2001/08/24 21:01:12  mohor
+// Things connected to parity changed.
+// Clock devider changed.
+//
 // Revision 1.8  2001/08/24 08:48:10  mohor
 // FIFO was not cleared after the data was read bug fixed.
 //
@@ -89,7 +93,10 @@
 //
 //
 
+// synopsys translate_off
 `include "timescale.v"
+// synopsys translate_on
+
 `include "uart_defines.v"
 
 module uart_fifo (clk, 

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
-////  uart_TX_FIFO.v                                              ////
+////  uart_wb.v                                                   ////
 ////                                                              ////
 ////                                                              ////
 ////  This file is part of the "UART 16550 compatible" project    ////
@@ -64,6 +64,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.8  2001/08/24 21:01:12  mohor
+// Things connected to parity changed.
+// Clock devider changed.
+//
 // Revision 1.7  2001/08/23 16:05:05  mohor
 // Stop bit bug fixed.
 // Parity bug fixed.
@@ -92,7 +96,9 @@
 // Company: Flextronics Semiconductor
 //
 
+// synopsys translate_off
 `include "timescale.v"
+// synopsys translate_on
 
 module uart_wb (clk,
         wb_rst_i, 

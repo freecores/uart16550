@@ -63,6 +63,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.9  2001/08/24 21:01:12  mohor
+// Things connected to parity changed.
+// Clock devider changed.
+//
 // Revision 1.8  2001/08/23 16:05:05  mohor
 // Stop bit bug fixed.
 // Parity bug fixed.
@@ -94,7 +98,10 @@
 //
 //
 
+// synopsys translate_off
 `include "timescale.v"
+// synopsys translate_on
+
 `include "uart_defines.v"
 
 module uart_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_pad_o, state, tf_count, tx_reset);

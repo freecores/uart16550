@@ -64,6 +64,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.12  2001/08/25 15:46:19  gorban
+// Modified port names again
+//
 // Revision 1.11  2001/08/24 21:01:12  mohor
 // Things connected to parity changed.
 // Clock devider changed.
@@ -89,8 +92,10 @@
 // Initial revision
 //
 //
-
+// synopsys translate_off
 `include "timescale.v"
+// synopsys translate_on
+
 `include "uart_defines.v"
 
 module uart_top	(
