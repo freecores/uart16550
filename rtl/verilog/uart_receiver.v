@@ -88,14 +88,14 @@
 `include "timescale.v"
 //`include "uart_defines.v"
 
-module uart_receiver (clk, wb_rst_i, lcr, rf_pop, pad_srx_i, enable, rda_int,
+module uart_receiver (clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
 	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset);
 
 input				clk;
 input				wb_rst_i;
 input	[7:0]			lcr;
 input				rf_pop;
-input				pad_srx_i;
+input				srx_pad_i;
 input				enable;
 input				rda_int;
 input				rx_reset;
@@ -181,7 +181,7 @@ begin
   if (enable)
   begin
 	case (rstate)
-	sr_idle :	if (pad_srx_i==1'b0)   // detected a pulse (start bit?)
+	sr_idle :	if (srx_pad_i==1'b0)   // detected a pulse (start bit?)
 			begin
 				rstate <= #1 sr_rec_start;
 				rcounter16 <= #1 4'b1110;
@@ -190,7 +190,7 @@ begin
 				rstate <= #1 sr_idle;
 	sr_rec_start :	begin
 				if (rcounter16_eq_7)    // check the pulse
-					if (pad_srx_i==1'b1)   // no start bit
+					if (srx_pad_i==1'b1)   // no start bit
 						rstate <= #1 sr_idle;
 					else            // start bit detected
 						rstate <= #1 sr_rec_prepare;
@@ -218,10 +218,10 @@ begin
 					rstate <= #1 sr_end_bit;
 				if (rcounter16_eq_7) // read the bit
 					case (lcr[/*`UART_LC_BITS*/1:0])  // number of bits in a word
-					2'b00 : rshift[4:0]  <= #1 {pad_srx_i, rshift[4:1]};
-					2'b01 : rshift[5:0]  <= #1 {pad_srx_i, rshift[5:1]};
-					2'b10 : rshift[6:0]  <= #1 {pad_srx_i, rshift[6:1]};
-					2'b11 : rshift[7:0]  <= #1 {pad_srx_i, rshift[7:1]};
+					2'b00 : rshift[4:0]  <= #1 {srx_pad_i, rshift[4:1]};
+					2'b01 : rshift[5:0]  <= #1 {srx_pad_i, rshift[5:1]};
+					2'b10 : rshift[6:0]  <= #1 {srx_pad_i, rshift[6:1]};
+					2'b11 : rshift[7:0]  <= #1 {srx_pad_i, rshift[7:1]};
 					endcase
 				rcounter16 <= #1 rcounter16_minus_1;
 			end
@@ -244,7 +244,7 @@ begin
 	sr_rec_parity: begin
 				if (rcounter16_eq_7)	// read the parity
 				begin
-					rparity <= #1 pad_srx_i;
+					rparity <= #1 srx_pad_i;
 					rstate <= #1 sr_ca_lc_parity;
 				end
 				rcounter16 <= #1 rcounter16_minus_1;
@@ -274,7 +274,7 @@ begin
 	sr_rec_stop :	begin
 				if (rcounter16_eq_7)	// read the parity
 				begin
-					rframing_error <= #1 !pad_srx_i; // no framing error if input is 1 (stop bit)
+					rframing_error <= #1 !srx_pad_i; // no framing error if input is 1 (stop bit)
 					rf_data_in <= #1 {rshift, rparity_error, rframing_error};
 					rstate <= #1 sr_push;
 				end
@@ -308,7 +308,7 @@ begin
 		counter_b <= #1 4'd11;
 	else
 	if (enable)  // only work on enable times
-		if (!pad_srx_i)
+		if (!srx_pad_i)
 			counter_b <= #1 4'd11; // maximum character time length - 1
 		else
 			if (counter_b != 4'b0)            // break reached

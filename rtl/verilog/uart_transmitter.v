@@ -88,7 +88,7 @@
 `include "timescale.v"
 //`include "uart_defines.v"
 
-module uart_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	pad_stx_o, state, tf_count, tx_reset);
+module uart_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_pad_o, state, tf_count, tx_reset);
 
 input				clk;
 input				wb_rst_i;
@@ -97,7 +97,7 @@ input				tf_push;
 input	[7:0]			wb_dat_i;
 input				enable;
 input				tx_reset;
-output				pad_stx_o;
+output				stx_pad_o;
 output	[2:0]			state;
 output	[`UART_FIFO_COUNTER_W-1:0]	tf_count;
 
@@ -105,7 +105,7 @@ reg	[2:0]	state;
 reg	[3:0]	counter16;
 reg	[2:0]	bit_counter;   // counts the bits to be sent
 reg	[6:0]	shift_out;	// output shift register
-reg		pad_stx_o;
+reg		stx_pad_o;
 reg		parity_xor;  // parity of the word
 reg		tf_pop;
 reg		bit_out;
@@ -149,7 +149,7 @@ begin
   if (wb_rst_i)
   begin
 	state       <= #1 s_idle;
-	pad_stx_o       <= #1 1'b1;
+	stx_pad_o       <= #1 1'b1;
 	counter16   <= #1 4'b0;
 	shift_out   <= #1 7'b0;
 	bit_out     <= #1 1'b0;
@@ -164,12 +164,12 @@ begin
 	s_idle	 :	if (~|tf_count) // if tf_count==0
 			begin
 				state <= #1 s_idle;
-				pad_stx_o <= #1 1'b1;
+				stx_pad_o <= #1 1'b1;
 			end
 			else
 			begin
 				tf_pop <= #1 1'b0;
-				pad_stx_o  <= #1 1'b1;
+				stx_pad_o  <= #1 1'b1;
 				state  <= #1 s_pop_byte;
 			end
 	s_pop_byte :	begin
@@ -207,7 +207,7 @@ begin
 				end
 				else
 					counter16 <= #1 counter16 - 4'b0001;
-				pad_stx_o <= #1 1'b0;
+				stx_pad_o <= #1 1'b0;
 			end
 	s_send_byte :	begin
 				if (~|counter16)
@@ -240,7 +240,7 @@ begin
 				end
 				else
 					counter16 <= #1 counter16 - 4'b0001;
-				pad_stx_o <= #1 bit_out; // set output pin
+				stx_pad_o <= #1 bit_out; // set output pin
 			end
 	s_send_parity :	begin
 				if (~|counter16)
@@ -253,7 +253,7 @@ begin
 				end
 				else
 					counter16 <= #1 counter16 - 4'b0001;
-				pad_stx_o <= #1 bit_out;
+				stx_pad_o <= #1 bit_out;
 			end
 	s_send_stop :  begin
 				if (~|counter16)
@@ -266,7 +266,7 @@ begin
 				end
 				else
 					counter16 <= #1 counter16 - 4'b0001;
-				pad_stx_o <= #1 1'b1;
+				stx_pad_o <= #1 1'b1;
 			end
 
 		default : // should never get here

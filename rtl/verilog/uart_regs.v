@@ -95,7 +95,7 @@ module uart_regs (clk,
 
 // additional signals
 	modem_inputs,
-	pad_stx_o, pad_srx_i,
+	stx_pad_o, srx_pad_i,
 	enable,
 	rts_o, dtr_o, int_o
 	);
@@ -107,8 +107,8 @@ input	[7:0]	wb_dat_i;
 output	[7:0]	wb_dat_o;
 input		wb_we_i;
 
-output		pad_stx_o;
-input		pad_srx_i;
+output		stx_pad_o;
+input		srx_pad_i;
 
 input	[3:0]	modem_inputs;
 output		enable;
@@ -118,8 +118,8 @@ output		int_o;
 
 wire	[3:0]	modem_inputs;
 reg		enable;
-wire		pad_stx_o;		// received from transmitter module
-wire		pad_srx_i;
+wire		stx_pad_o;		// received from transmitter module
+wire		srx_pad_i;
 
 reg	[7:0]	wb_dat_o;
 
@@ -185,10 +185,10 @@ wire	[5:0]			counter_t;
 wire	[3:0]			counter_b;
 
 // Transmitter Instance
-uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, pad_stx_o, state, tf_count, tx_reset);
+uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_pad_o, state, tf_count, tx_reset);
 
 // Receiver Instance
-uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, pad_srx_i, enable, rda_int,
+uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
 	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset);
 
 always @(posedge clk or posedge wb_rst_i)   // synchrounous reading

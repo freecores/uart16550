@@ -89,7 +89,7 @@ module uart_top	(
 
 	// UART	signals
 	// serial input/output
-	pad_stx_o, pad_srx_i,
+	stx_pad_o, srx_pad_i,
 
 	// modem signals
 	rts_o, cts_i, dtr_o, dsr_i, ri_i, dcd_i
@@ -113,8 +113,8 @@ output 								 wb_ack_o;
 output 								 int_o;
 
 // UART	signals
-input 								 pad_srx_i;
-output 								 pad_stx_o;
+input 								 srx_pad_i;
+output 								 stx_pad_o;
 output 								 rts_o;
 input 								 cts_i;
 output 								 dtr_o;
@@ -122,7 +122,7 @@ input 								 dsr_i;
 input 								 ri_i;
 input 								 dcd_i;
 
-wire 									 pad_stx_o;
+wire 									 stx_pad_o;
 wire 									 rts_o;
 wire 									 dtr_o;
 
@@ -157,8 +157,8 @@ uart_regs	regs(
 		.wb_we_i(	we_o		),
 		.modem_inputs(	{cts_i, dsr_i,
 				 ri_i,  dcd_i}	),
-		.pad_stx_o(		pad_stx_o		),
-		.pad_srx_i(		pad_srx_i		),
+		.stx_pad_o(		stx_pad_o		),
+		.srx_pad_i(		srx_pad_i		),
 		.enable(	enable		),
 		.rts_o(		rts_o		),
 		.dtr_o(		dtr_o		),
