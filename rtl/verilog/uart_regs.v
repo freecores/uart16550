@@ -62,6 +62,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.10  2001/08/24 21:01:12  mohor
+// Things connected to parity changed.
+// Clock devider changed.
+//
 // Revision 1.9  2001/08/23 16:05:05  mohor
 // Stop bit bug fixed.
 // Parity bug fixed.
@@ -376,7 +380,7 @@ always @(posedge clk or posedge wb_rst_i)
 	end
 
 // Receiver FIFO trigger level selection logic (asynchronous mux)
-always @(fcr[`UART_FC_TL])
+always @(fcr)
 	case (fcr[`UART_FC_TL])
 		2'b00 : trigger_level = 1;
 		2'b01 : trigger_level = 4;
