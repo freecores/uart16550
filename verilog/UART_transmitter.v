@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.2  2001/05/21 19:12:02  gorban
+// Corrected some Linter messages.
+//
 // Revision 1.1  2001/05/17 18:34:18  gorban
 // First 'stable' release. Should be sythesizable now. Also added new header.
 //
@@ -73,7 +76,7 @@
 `include "timescale.v"
 `include "UART_defines.v"
 
-module UART_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_o, state, tf_count);
+module UART_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_o, state, tf_count, tx_reset);
 
 input				clk;
 input				wb_rst_i;
@@ -81,6 +84,7 @@ input	[7:0]			lcr;
 input				tf_push;
 input	[7:0]			wb_dat_i;
 input				enable;
+input				tx_reset;
 output				stx_o;
 output	[2:0]			state;
 output	[`FIFO_COUNTER_W-1:0]	tf_count;
@@ -107,7 +111,7 @@ wire	[`FIFO_COUNTER_W-1:0]	tf_count;
 assign tf_data_in = wb_dat_i;
 
 UART_TX_FIFO fifo_tx(clk, wb_rst_i, tf_data_in, tf_data_out,
-	tf_push, tf_pop, tf_underrun, tf_overrun, tf_count);
+	tf_push, tf_pop, tf_underrun, tf_overrun, tf_count, tx_reset);
 
 // TRANSMITTER FINAL STATE MACHINE
 

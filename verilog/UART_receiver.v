@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.2  2001/05/21 19:12:02  gorban
+// Corrected some Linter messages.
+//
 // Revision 1.1  2001/05/17 18:34:18  gorban
 // First 'stable' release. Should be sythesizable now. Also added new header.
 //
@@ -74,7 +77,7 @@
 `include "UART_defines.v"
 
 module UART_receiver (clk, wb_rst_i, lcr, rf_pop, srx_i, enable, rda_int,
-	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun);
+	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset);
 
 input				clk;
 input				wb_rst_i;
@@ -83,6 +86,7 @@ input				rf_pop;
 input				srx_i;
 input				enable;
 input				rda_int;
+input				rx_reset;
 
 output	[5:0]			counter_t;
 output	[3:0]			counter_b;
@@ -113,7 +117,7 @@ wire				rf_error_bit; // an error (parity or framing) is inside the fifo
 
 // RX FIFO instance
 UART_RX_FIFO fifo_rx(clk, wb_rst_i, rf_data_in, rf_data_out,
-	rf_push, rf_pop, rf_underrun, rf_overrun, rf_count, rf_error_bit);
+	rf_push, rf_pop, rf_underrun, rf_overrun, rf_count, rf_error_bit, rx_reset);
 
 // Receiver FIFO parameters redefine
 defparam fifo_rx.fifo_width = `FIFO_REC_WIDTH;

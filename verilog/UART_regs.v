@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.6  2001/05/21 19:12:02  gorban
+// Corrected some Linter messages.
+//
 // Revision 1.5  2001/05/17 18:34:18  gorban
 // First 'stable' release. Should be sythesizable now. Also added new header.
 //
@@ -135,6 +138,8 @@ reg	[7:0]	msr;
 reg	[31:0]	dl;  // 32-bit divisor latch
 reg		start_dlc; // activate dlc on writing to DL1
 reg		lsr_mask;
+reg		msi_reset; // reset MSR 4 lower bits indicator
+reg		threi_clear; // THRE interrupt clear flag
 reg	[31:0]	dlc;  // 32-bit divisor latch counter
 reg		int_o;
 
@@ -179,13 +184,14 @@ wire	[5:0]			counter_t;
 wire	[3:0]			counter_b;
 
 // Transmitter Instance
-UART_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_o, state, tf_count);
+UART_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_o, state, tf_count, tx_reset);
 
 // Receiver Instance
 UART_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_i, enable, rda_int,
-	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun);
+	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset);
 
 always @(posedge clk or posedge wb_rst_i)   // synchrounous reading
+begin
     if (wb_rst_i)
     begin
 	wb_dat_o <= #1 8'b0;
@@ -204,7 +210,10 @@ always @(posedge clk or posedge wb_rst_i)   // synchrounous reading
 		  end
 
 	`REG_IE	: wb_dat_o <= #1 dlab ? dl[`DL2] : ier;
-	`REG_II	: wb_dat_o <= #1 {4'b1100,iir};
+	`REG_II	: begin
+			wb_dat_o <= #1 {4'b1100,iir};
+			threi_clear <= #1 1;
+		  end
 	`REG_LC	: wb_dat_o <= #1 lcr;
 	`REG_LS	: if (dlab)
 			wb_dat_o <= #1 dl[`DL4];
@@ -213,7 +222,10 @@ always @(posedge clk or posedge wb_rst_i)   // synchrounous reading
 			wb_dat_o <= #1 lsr;
 			lsr_mask <= #1 1'b1;
 		  end
-	`REG_MS	: wb_dat_o <= #1 msr;
+	`REG_MS	: begin
+			wb_dat_o <= #1 msr;
+			msi_reset <= #1 1; // clear the modem status interrupt
+		  end
 	`REG_DL3: wb_dat_o <= #1 dlab ? dl[`DL3] : 8'b0;
 
 	default:  wb_dat_o <= #1 8'b0; // ??
@@ -221,6 +233,20 @@ always @(posedge clk or posedge wb_rst_i)   // synchrounous reading
     else
 	wb_dat_o <= #1 8'b0;
 
+// Reset flags after one clock
+    if (rf_pop)
+	rf_pop <= #1 0;
+    if (lsr_mask)
+	lsr_mask <= #1 0;
+    if (msi_reset)
+	msi_reset <= #1 0;
+    if (threi_clear && !lsr[`LS_TFE] && (tf_count==0)) // reset clear flag when tx fifo clears
+	threi_clear <= #1 0;
+	
+    
+
+
+end
 
 //
 //   WRITES AND RESETS   //
@@ -323,7 +349,8 @@ always @(posedge clk or posedge wb_rst_i)
 // Modem Status Register
 always @(posedge clk)
 begin
-	msr[`MS_DDCD:`MS_DCTS] <= #1 {dcd, ri, dsr, cts} ^ msr[`MS_DDCD:`MS_DCTS];
+	msr[`MS_DDCD:`MS_DCTS] <= #1 msi_reset ? 4'b0 :
+		msr[`MS_DDCD:`MS_DCTS] | ({dcd, ri, dsr, cts} ^ msr[`MS_CDCD:`MS_CCTS]);
 	msr[`MS_CDCD:`MS_CCTS] <= #1 {dcd, ri, dsr, cts};
 end
 
@@ -391,6 +418,7 @@ end
 //	INTERRUPT LOGIC
 //
 always @(posedge clk or posedge wb_rst_i)
+begin
 	if (wb_rst_i)
 	begin
 		rls_int  <= #1 1'b0;
@@ -401,12 +429,13 @@ always @(posedge clk or posedge wb_rst_i)
 	end
 	else
 	begin
-		rls_int  <= #1 lsr[`LS_OE] || lsr[`LS_PE] || lsr[`LS_FE] || lsr[`LS_BI];
-		rda_int  <= #1 (rf_count >= {1'b0,trigger_level});
-		thre_int <= #1 lsr[`LS_TFE];
-		ms_int   <= #1 | msr[7:4]; // modem interrupt is pending when one of the modem inputs is asserted
-		ti_int   <= #1 (counter_t == 6'b0);
+		rls_int  <= #1 ier[`IE_RLS] && (lsr[`LS_OE] || lsr[`LS_PE] || lsr[`LS_FE] || lsr[`LS_BI]);
+		rda_int  <= #1 ier[`IE_RDA] && (rf_count >= {1'b0,trigger_level});
+		thre_int <= #1 threi_clear ? 0 : ier[`IE_THRE] && lsr[`LS_TFE];
+		ms_int   <= #1 ier[`IE_MS] && (| msr[3:0]);
+		ti_int   <= #1 ier[`IE_RDA] && (counter_t == 6'b0);
 	end
+end
 
 always @(posedge clk or posedge wb_rst_i)
 begin
@@ -424,40 +453,40 @@ end
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
-		iir <= #1 0;
+		iir <= #1 1;
 	else
-	if (rls_int && ier[`IE_RLS])  // interrupt occured and is enabled  (not masked)
+	if (rls_int)  // interrupt occured and is enabled  (not masked)
 	begin
 		iir[`II_II] <= #1 `II_RLS;	// set identification register to correct value
-		iir[`II_IP] <= #1 1'b1;		// and set the IIR bit 0 (interrupt pending)
+		iir[`II_IP] <= #1 1'b0;		// and clear the IIR bit 0 (interrupt pending)
 	end
 	else
-	if (rda_int && ier[`IE_RDA])
+	if (rda_int)
 	begin
 		iir[`II_II] <= #1 `II_RDA;
-		iir[`II_IP] <= #1 1'b1;
+		iir[`II_IP] <= #1 1'b0;
 	end
 	else
-	if (ti_int)  // this interupt is not maskable ???
+	if (ti_int)
 	begin
 		iir[`II_II] <= #1 `II_TI;
-		iir[`II_IP] <= #1 1'b1;
+		iir[`II_IP] <= #1 1'b0;
 	end
 	else
-	if (thre_int && ier[`IE_THRE])
+	if (thre_int)
 	begin
 		iir[`II_II] <= #1 `II_THRE;
-		iir[`II_IP] <= #1 1'b1;
+		iir[`II_IP] <= #1 1'b0;
 	end
 	else
-	if (ms_int && ier[`IE_MS])
+	if (ms_int)
 	begin
 		iir[`II_II] <= #1 `II_MS;
-		iir[`II_IP] <= #1 1'b1;
+		iir[`II_IP] <= #1 1'b0;
 	end
 	else	// no interrupt is pending
 	begin
-		iir[`II_IP] <= #1 1'b0;
+		iir[`II_IP] <= #1 1'b1;
 	end
 end
 

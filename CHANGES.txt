@@ -1,0 +1,19 @@
+Note: This Changes file is being maintained since 25.5.2001.
+
+27.05.2001
+~~~~~~~~~~
+
+* Fixed the rf_pop and lsr_mask flags not being deasserted.
+* Fixed Time-Out interrupt not being masked by bit 0 in IER
+* Fixed interrupt logic not being masked by IER
+* Fixed bit 0 (interrupt pending) of IIR being set incorrectly
+* Fixed Modem Status Register bits 3:0 handling (didn't work as should have)
+* Fixed modem status interrupt to be related to bits [3:0] (deltas) instead of the bits 7:4 of MSR.
+   This way the interrupt is cleared upon reading from the MSR.
+* Fixed THRE interrupt not being reset by reading IIR
+* Changed Receiver and Transmitter FIFO, so that they do not use the FIFO_inc.v file because of problems
+  with #include command.
+* Removed FIFO_inc.v from CVS tree.
+
+* Updated specifications .pdf file
+
