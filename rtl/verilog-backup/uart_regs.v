@@ -97,7 +97,7 @@ module uart_regs (clk,
 	modem_inputs,
 	stx_pad_o, srx_pad_i,
 	enable,
-	rts_o, dtr_o, int_o
+	rts_pad_o, dtr_pad_o, int_o
 	);
 
 input		clk;
@@ -112,8 +112,8 @@ input		srx_pad_i;
 
 input	[3:0]	modem_inputs;
 output		enable;
-output		rts_o;
-output		dtr_o;
+output		rts_pad_o;
+output		dtr_pad_o;
 output		int_o;
 
 wire	[3:0]	modem_inputs;
@@ -147,24 +147,24 @@ reg		rx_reset;
 reg		tx_reset;
 
 wire		dlab;			   // divisor latch access bit
-wire		cts_i, dsr_i, ri_i, dcd_i; // modem status bits
+wire		cts_pad_i, dsr_pad_i, ri_pad_i, dcd_pad_i; // modem status bits
 wire		loopback;		   // loopback bit (MCR bit 4)
 wire		cts, dsr, ri, dcd;	   // effective signals (considering loopback)
-wire		rts_o, dtr_o;		   // modem control outputs
+wire		rts_pad_o, dtr_pad_o;		   // modem control outputs
 
 //
 // ASSINGS
 //
-assign {cts_i, dsr_i, ri_i, dcd_i} = modem_inputs;
+assign {cts_pad_i, dsr_pad_i, ri_pad_i, dcd_pad_i} = modem_inputs;
 assign {cts, dsr, ri, dcd} = loopback ? {mcr[`UART_MC_RTS],mcr[`UART_MC_DTR],mcr[`UART_MC_OUT1],mcr[`UART_MC_OUT2]}
-		 : ~{cts_i,dsr_i,ri_i,dcd_i};
+		 : ~{cts_pad_i,dsr_pad_i,ri_pad_i,dcd_pad_i};
 
 assign dlab = lcr[`UART_LC_DL];
 assign loopback = mcr[4];
 
 // assign modem outputs
-assign	rts_o = mcr[`UART_MC_RTS];
-assign	dtr_o = mcr[`UART_MC_DTR];
+assign	rts_pad_o = mcr[`UART_MC_RTS];
+assign	dtr_pad_o = mcr[`UART_MC_DTR];
 
 // Interrupt signals
 reg	rls_int;  // receiver line status interrupt

@@ -115,16 +115,16 @@ output 								 int_o;
 // UART	signals
 input 								 srx_pad_i;
 output 								 stx_pad_o;
-output 								 rts_o;
-input 								 cts_i;
-output 								 dtr_o;
-input 								 dsr_i;
-input 								 ri_i;
-input 								 dcd_i;
+output 								 rts_pad_o;
+input 								 cts_pad_i;
+output 								 dtr_pad_o;
+input 								 dsr_pad_i;
+input 								 ri_pad_i;
+input 								 dcd_pad_i;
 
 wire 									 stx_pad_o;
-wire 									 rts_o;
-wire 									 dtr_o;
+wire 									 rts_pad_o;
+wire 									 dtr_pad_o;
 
 wire [uart_addr_width-1:0] 	 wb_addr_i;
 wire [uart_data_width-1:0] 	 wb_dat_i;
@@ -155,13 +155,13 @@ uart_regs	regs(
 		.wb_dat_i(	wb_dat_i	),
 		.wb_dat_o(	wb_dat_o	),
 		.wb_we_i(	we_o		),
-		.modem_inputs(	{cts_i, dsr_i,
-				 ri_i,  dcd_i}	),
+		.modem_inputs(	{cts_pad_i, dsr_pad_i,
+				 ri_pad_i,  dcd_pad_i}	),
 		.stx_pad_o(		stx_pad_o		),
 		.srx_pad_i(		srx_pad_i		),
 		.enable(	enable		),
-		.rts_o(		rts_o		),
-		.dtr_o(		dtr_o		),
+		.rts_pad_o(		rts_pad_o		),
+		.dtr_pad_o(		dtr_pad_o		),
 		.int_o(		int_o		)
 		);
 
