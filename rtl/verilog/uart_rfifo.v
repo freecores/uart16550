@@ -60,6 +60,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.3  2003/06/11 16:37:47  gorban
+// This fixes errors in some cases when data is being read and put to the FIFO at the same time. Patch is submitted by Scott Furman. Update is very recommended.
+//
 // Revision 1.2  2002/07/29 21:16:18  gorban
 // The uart_defines.v file is included again in sources.
 //
@@ -207,12 +210,44 @@ begin
 		top		<= #1 0;
 		bottom		<= #1 1'b0;
 		count		<= #1 0;
+		fifo[0] <= #1 0;
+		fifo[1] <= #1 0;
+		fifo[2] <= #1 0;
+		fifo[3] <= #1 0;
+		fifo[4] <= #1 0;
+		fifo[5] <= #1 0;
+		fifo[6] <= #1 0;
+		fifo[7] <= #1 0;
+		fifo[8] <= #1 0;
+		fifo[9] <= #1 0;
+		fifo[10] <= #1 0;
+		fifo[11] <= #1 0;
+		fifo[12] <= #1 0;
+		fifo[13] <= #1 0;
+		fifo[14] <= #1 0;
+		fifo[15] <= #1 0;
 	end
 	else
 	if (fifo_reset) begin
 		top		<= #1 0;
 		bottom		<= #1 1'b0;
 		count		<= #1 0;
+		fifo[0] <= #1 0;
+		fifo[1] <= #1 0;
+		fifo[2] <= #1 0;
+		fifo[3] <= #1 0;
+		fifo[4] <= #1 0;
+		fifo[5] <= #1 0;
+		fifo[6] <= #1 0;
+		fifo[7] <= #1 0;
+		fifo[8] <= #1 0;
+		fifo[9] <= #1 0;
+		fifo[10] <= #1 0;
+		fifo[11] <= #1 0;
+		fifo[12] <= #1 0;
+		fifo[13] <= #1 0;
+		fifo[14] <= #1 0;
+		fifo[15] <= #1 0;
 	end
   else
 	begin
