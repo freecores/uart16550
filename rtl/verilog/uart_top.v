@@ -92,7 +92,7 @@ module uart_top	(
 	stx_pad_o, srx_pad_i,
 
 	// modem signals
-	rts_o, cts_i, dtr_o, dsr_i, ri_i, dcd_i
+	rts_pad_o, cts_pad_i, dtr_pad_o, dsr_pad_i, ri_pad_i, dcd_pad_i
 
 	);
 
