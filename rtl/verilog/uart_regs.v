@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.22  2001/11/12 15:02:28  mohor
+// lsr1r error fixed.
+//
 // Revision 1.21  2001/11/12 14:57:27  mohor
 // ti_int_pnd error fixed.
 //
@@ -480,7 +483,7 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr2_d <= #1 lsr2;
 
 always @(posedge clk or posedge wb_rst_i)
-	if (wb_rst_i) lsr2_d <= #1 0;
+	if (wb_rst_i) lsr2r <= #1 0;
 	else lsr2r <= #1 lsr_mask ? 0 : lsr2 && ~lsr2_d; // set on rise
 
 // lsr bit 3 (framing error)
@@ -491,7 +494,7 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr3_d <= #1 lsr3;
 
 always @(posedge clk or posedge wb_rst_i)
-	if (wb_rst_i) lsr3_d <= #1 0;
+	if (wb_rst_i) lsr3r <= #1 0;
 	else lsr3r <= #1 lsr_mask ? 0 : lsr3 && ~lsr3_d; // set on rise
 
 // lsr bit 4 (break indicator)
@@ -502,7 +505,7 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr4_d <= #1 lsr4;
 
 always @(posedge clk or posedge wb_rst_i)
-	if (wb_rst_i) lsr4_d <= #1 0;
+	if (wb_rst_i) lsr4r <= #1 0;
 	else lsr4r <= #1 lsr_mask ? 0 : lsr4 && ~lsr4_d;
 
 // lsr bit 5 (transmitter fifo is empty)
@@ -515,7 +518,7 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr5_d <= #1 lsr5;
 
 always @(posedge clk or posedge wb_rst_i)
-	if (wb_rst_i) lsr5_d <= #1 0;
+	if (wb_rst_i) lsr5r <= #1 0;
 	else lsr5r <= #1 (lsr_mask || iir_read || tx_fifo_write) ? 0 :  lsr5 && ~lsr5_d;
 
 // lsr bit 6 (transmitter empty indicator)
@@ -526,7 +529,7 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr6_d <= #1 lsr6;
 
 always @(posedge clk or posedge wb_rst_i)
-	if (wb_rst_i) lsr6_d <= #1 0;
+	if (wb_rst_i) lsr6r <= #1 0;
 	else lsr6r <= #1 (lsr_mask || tx_fifo_write) ? 0 : lsr6 && ~lsr6_d;
 
 // lsr bit 7 (error in fifo)
@@ -537,7 +540,7 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr7_d <= #1 lsr7;
 
 always @(posedge clk or posedge wb_rst_i)
-	if (wb_rst_i) lsr7_d <= #1 0;
+	if (wb_rst_i) lsr7r <= #1 0;
 	else lsr7r <= #1 lsr_mask ? 0 : lsr7 && ~lsr7_d;
 
 // Frequency divider
