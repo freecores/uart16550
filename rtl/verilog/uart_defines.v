@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.13  2003/06/11 16:37:47  gorban
+// This fixes errors in some cases when data is being read and put to the FIFO at the same time. Patch is submitted by Scott Furman. Update is very recommended.
+//
 // Revision 1.12  2002/07/22 23:02:23  gorban
 // Bug Fixes:
 //  * Possible loss of sync and bad reception of stop bit on slow baud rates fixed.
@@ -125,10 +128,11 @@
 //
 //
 
-// remove comments to restore use to the old version with 8 data bit interface
-// in new mode (32bit bus), the wb_sel_i signal is used to pus data in correct place
+// remove comments to restore to use the new version with 8 data bit interface
+// in 32bit-bus mode, the wb_sel_i signal is used to put data in correct place
 // also, in 8-bit version there'll be no debugging features included
-`define DATA_BUS_WIDTH_8
+// CAUTION: doesn't work with current version of OR1200
+//`define DATA_BUS_WIDTH_8
 
 `ifdef DATA_BUS_WIDTH_8
  `define UART_ADDR_WIDTH 3
@@ -138,7 +142,7 @@
  `define UART_DATA_WIDTH 32
 `endif
 
-// Uncomment this if you want your UART to have 
+// Uncomment this if you want your UART to have
 // 16xBaudrate output port.
 // If defined, the enable signal will be used to drive baudrate_o signal
 // It's frequency is 16xbaudrate
