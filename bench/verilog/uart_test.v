@@ -79,67 +79,67 @@ module uart_test ();
 
 `include "uart_defines.v"
 
-reg				clkr;
-reg				wb_rst_ir;
-wire	[`UART_ADDR_WIDTH-1:0]	wb_adr_i;
-wire	[31:0]	wb_dat_i;
-wire	[31:0]	wb_dat_o;
-wire [3:0]		wb_sel_i;
-wire				pad_stx_o;
-reg				pad_srx_ir;
+reg       clkr;
+reg       wb_rst_ir;
+wire  [`UART_ADDR_WIDTH-1:0]  wb_adr_i;
+wire  [31:0]  wb_dat_i;
+wire  [31:0]  wb_dat_o;
+wire [3:0]    wb_sel_i;
+wire        pad_stx_o;
+reg       pad_srx_ir;
 
 integer e;
 
-uart_top	uart_snd(
-	clk, 
-	
-	// Wishbone signals
-						wb_rst_i, wb_adr_i, wb_dat_i, wb_dat_o, wb_we_i, wb_stb_i, wb_cyc_i, wb_ack_o,	wb_sel_i,
-	int_o, // interrupt request
+uart_top  uart_snd(
+  clk, 
+  
+  // Wishbone signals
+            wb_rst_i, wb_adr_i, wb_dat_i, wb_dat_o, wb_we_i, wb_stb_i, wb_cyc_i, wb_ack_o,  wb_sel_i,
+  int_o, // interrupt request
 
-	// UART	signals
-	// serial input/output
-	pad_stx_o, pad_srx_i,
+  // UART signals
+  // serial input/output
+  pad_stx_o, pad_srx_i,
 
-	// modem signals
-	rts_o, cts_i, dtr_o, dsr_i, ri_i, dcd_i
+  // modem signals
+  rts_o, cts_i, dtr_o, dsr_i, ri_i, dcd_i
 `ifdef UART_HAS_BAUDRATE_OUTPUT
-	, baud1_o
+  , baud1_o
 `endif
 
 
 
-	);
+  );
 
 
 // All the signals and regs named with a 1 are receiver fifo signals
 
-wire	[`UART_ADDR_WIDTH-1:0]	wb1_adr_i;
-wire	[31:0]			wb1_dat_i;
-wire	[31:0]			wb1_dat_o;
-wire [3:0] 		wb1_sel_i;
-wire				int1_o;
-wire				stx1_o;
-reg				srx1_ir;
+wire  [`UART_ADDR_WIDTH-1:0]  wb1_adr_i;
+wire  [31:0]      wb1_dat_i;
+wire  [31:0]      wb1_dat_o;
+wire [3:0]    wb1_sel_i;
+wire        int1_o;
+wire        stx1_o;
+reg       srx1_ir;
 
-uart_top	uart_rcv(
-	clk, 
-	
-	// Wishbone signals
-	wb_rst_i, wb1_adr_i, wb1_dat_i, wb1_dat_o, wb1_we_i, wb1_stb_i, wb1_cyc_i, wb1_ack_o, wb1_sel_i,	
-	int1_o, // interrupt request
+uart_top  uart_rcv(
+  clk, 
+  
+  // Wishbone signals
+  wb_rst_i, wb1_adr_i, wb1_dat_i, wb1_dat_o, wb1_we_i, wb1_stb_i, wb1_cyc_i, wb1_ack_o, wb1_sel_i,  
+  int1_o, // interrupt request
 
-	// UART	signals
-	// serial input/output
-	stx1_o, srx1_i,
+  // UART signals
+  // serial input/output
+  stx1_o, srx1_i,
 
-	// modem signals
-	rts1_o, cts1_i, dtr1_o, dsr1_i, ri1_i, dcd1_i
+  // modem signals
+  rts1_o, cts1_i, dtr1_o, dsr1_i, ri1_i, dcd1_i
 `ifdef UART_HAS_BAUDRATE_OUTPUT
-	, baud2_o
+  , baud2_o
 `endif
 
-	);
+  );
 
 assign clk = clkr;
 assign wb_rst_i = wb_rst_ir;
@@ -159,147 +159,181 @@ reg [31:0] dat_o;
 /////////// CONNECT THE UARTS
 always @(pad_stx_o)
 begin
-	srx1_ir = pad_stx_o;	
+  srx1_ir = pad_stx_o;  
 end
 
 initial
 begin
-	clkr = 0;
-	#50000 $finish;
+  clkr = 0;
+  #50000 $finish;
 end
 
 wb_mast wbm(// Outputs
-				.adr								 (wb_adr_i),
-				.dout								 (wb_dat_i),
-				.cyc								 (wb_cyc_i),
-				.stb								 (wb_stb_i),
-				.sel								 (wb_sel_i),
-				.we								 (wb_we_i),
-				// Inputs
-				.clk								 (clk),
-				.rst								 (wb_rst_i),
-				.din								 (wb_dat_o),
-				.ack								 (wb_ack_o),
-				.err								 (1'b0),
-				.rty								 (1'b0));
+        .adr                 (wb_adr_i),
+        .dout                (wb_dat_i),
+        .cyc                 (wb_cyc_i),
+        .stb                 (wb_stb_i),
+        .sel                 (wb_sel_i),
+        .we                (wb_we_i),
+        // Inputs
+        .clk                 (clk),
+        .rst                 (wb_rst_i),
+        .din                 (wb_dat_o),
+        .ack                 (wb_ack_o),
+        .err                 (1'b0),
+        .rty                 (1'b0));
 
 wb_mast wbm1(// Outputs
-				 .adr								 (wb1_adr_i),
-				 .dout							 (wb1_dat_i),
-				 .cyc								 (wb1_cyc_i),
-				 .stb								 (wb1_stb_i),
-				 .sel								 (wb1_sel_i),
-				 .we								 (wb1_we_i),
-				 // Inputs
-				 .clk								 (clk),
-				 .rst								 (wb_rst_i),
-				 .din								 (wb1_dat_o),
-				 .ack								 (wb1_ack_o),
-				 .err								 (1'b0),
-				 .rty								 (1'b0));
+         .adr                (wb1_adr_i),
+         .dout               (wb1_dat_i),
+         .cyc                (wb1_cyc_i),
+         .stb                (wb1_stb_i),
+         .sel                (wb1_sel_i),
+         .we                 (wb1_we_i),
+         // Inputs
+         .clk                (clk),
+         .rst                (wb_rst_i),
+         .din                (wb1_dat_o),
+         .ack                (wb1_ack_o),
+         .err                (1'b0),
+         .rty                (1'b0));
 
 // The test sequence
 initial
 begin
-	#1 wb_rst_ir = 1;
-	#10 wb_rst_ir = 0;
-		
-	//write to lcr. set bit 7
-	//wb_cyc_ir = 1;
-	wbm.wb_wr1(`UART_REG_LC, 4'b1000, {8'b10011011, 24'b0});
-	// set dl to divide by 3
-	wbm.wb_wr1(`UART_REG_DL1,4'b0001, 32'd2);
-	@(posedge clk);
-	@(posedge clk);
-	// restore normal registers
-	wbm.wb_wr1(`UART_REG_LC, 4'b1000, {8'b00011011, 24'b0}); //00011011 
-	$display("%m : %t : sending : %h", $time, 8'b01101011);
-	wbm.wb_wr1(0, 4'b1, 32'b01101011);
-	@(posedge clk);
-	@(posedge clk);
-	$display("%m : %t : sending : %h", $time, 8'b01000101);
-	wbm.wb_wr1(0, 4'b1, 32'b01000101);
-	wait (uart_snd.regs.tstate==0 && uart_snd.regs.transmitter.tf_count==0);
+  #1 wb_rst_ir = 1;
+  #10 wb_rst_ir = 0;
+    
+  //write to lcr. set bit 7
+  //wb_cyc_ir = 1;
+  wbm.wb_wr1(`UART_REG_LC, 4'b1000, {8'b10011011, 24'b0});
+  // set dl to divide by 3
+  wbm.wb_wr1(`UART_REG_DL1,4'b0001, 32'd2);
+  @(posedge clk);
+  @(posedge clk);
+  // restore normal registers
+  wbm.wb_wr1(`UART_REG_LC, 4'b1000, {8'b00011011, 24'b0}); //00011011 
+
+  fork
+  begin
+    $display("%m : %t : sending : %h", $time, 8'b10000001);
+    wbm.wb_wr1(0, 4'b1, 32'b10000001);
+    @(posedge clk);
+    @(posedge clk);
+    $display("%m : %t : sending : %h", $time, 8'b01000010);
+    wbm.wb_wr1(0, 4'b1, 32'b01000010);
+    @(posedge clk);
+    @(posedge clk);
+    $display("%m : %t : sending : %h", $time, 8'b11000011);
+    wbm.wb_wr1(0, 4'b1, 32'b11000011);
+    @(posedge clk);
+    @(posedge clk);
+    $display("%m : %t : sending : %h", $time, 8'b00100100);
+    wbm.wb_wr1(0, 4'b1, 32'b00100100);
+    @(posedge clk);
+    @(posedge clk);
+    $display("%m : %t : sending : %h", $time, 8'b10100101);
+    wbm.wb_wr1(0, 4'b1, 32'b10100101);
+    @(posedge clk);
+    @(posedge clk);
+    $display("%m : %t : sending : %h", $time, 8'b01100110);
+    wbm.wb_wr1(0, 4'b1, 32'b01100110);
+    @(posedge clk);
+    @(posedge clk);
+    $display("%m : %t : sending : %h", $time, 8'b11100111);
+    wbm.wb_wr1(0, 4'b1, 32'b11100111);
+    @(posedge clk);
+    @(posedge clk);
+    $display("%m : %t : sending : %h", $time, 8'b00011000);
+    wbm.wb_wr1(0, 4'b1, 32'b00011000);
+    wait (uart_snd.regs.tstate==0 && uart_snd.regs.transmitter.tf_count==0);
+//    disable check;
+  end
+//  begin: check
+//  end
+  join
 end
 
 always @(int1_o)
-	if (int1_o)
-		$display("INT_O high (%g)", $time);
-	else
-		$display("INT_O low (%g)", $time);
-		
+  if (int1_o)
+    $display("INT_O high (%g)", $time);
+  else
+    $display("INT_O low (%g)", $time);
+    
 always @(int1_o)
 begin
-	if (int1_o) begin
-		wbm1.wb_rd1(2,4'b0100, dat_o);
-		$display("IIR : %h", dat_o);
-		wbm1.wb_rd1(5,4'b0010, dat_o);
-		$display("LSR : %h", dat_o);
-	end
+  if (int1_o) begin
+    wbm1.wb_rd1(2,4'b0100, dat_o);
+    $display("IIR : %h", dat_o);
+    wbm1.wb_rd1(5,4'b0010, dat_o);
+    $display("LSR : %h", dat_o);
+    wbm1.wb_rd1(0, 4'b1, dat_o);
+    $display("%m : %t : Data out: %h", $time, dat_o);
+  end
 end
 
 // receiver side
 initial
 begin
-	#11;
-	//write to lcr. set bit 7
-	//wb_cyc_ir = 1;
-	wbm1.wb_wr1(`UART_REG_LC, 4'b1000, {8'b10011011, 24'b0});
-	// set dl to divide by 3
-	wbm1.wb_wr1(`UART_REG_DL1, 4'b1, 32'd2);
-	@(posedge clk);
-	@(posedge clk);
-	// restore normal registers
-	wbm1.wb_wr1(`UART_REG_LC, 4'b1000, {8'b00011011, 24'b0});
-	wbm1.wb_wr1(`UART_REG_IE, 4'b0010, {16'b0, 8'b00001111, 8'b0});
-	wait(uart_rcv.regs.receiver.rf_count == 2);
-		e = 800;
-	while (e > 0)
-	begin
-		@(posedge clk)
- 		if (uart_rcv.regs.enable) e = e - 1;
-	end
-	wbm1.wb_rd1(0, 4'b1, dat_o);
-	$display("%m : %t : Data out: %h", $time, dat_o);
-	@(posedge clk);
-	wbm1.wb_rd1(0, 4'b1, dat_o);
-	$display("%m : %t : Data out: %h", $time, dat_o);
-	$display("%m : Finish");
-	e = 800;
-	while (e > 0)
-	begin
-		@(posedge clk)
- 		if (uart_rcv.regs.enable) e = e - 1;
-	end
-	e = 800;
-	while (e > 0)
-	begin
-		@(posedge clk)
- 		if (uart_rcv.regs.enable) e = e - 1;
-	end
-	$finish;
+  #11;
+  //write to lcr. set bit 7
+  //wb_cyc_ir = 1;
+  wbm1.wb_wr1(`UART_REG_LC, 4'b1000, {8'b10011011, 24'b0});
+  // set dl to divide by 3
+  wbm1.wb_wr1(`UART_REG_DL1, 4'b1, 32'd2);
+  @(posedge clk);
+  @(posedge clk);
+  // restore normal registers
+  wbm1.wb_wr1(`UART_REG_LC, 4'b1000, {8'b00011011, 24'b0});
+  wbm1.wb_wr1(`UART_REG_IE, 4'b0010, {16'b0, 8'b00001111, 8'b0});
+  wait(uart_rcv.regs.receiver.rf_count == 2);
+    e = 800;
+  while (e > 0)
+  begin
+    @(posedge clk)
+    if (uart_rcv.regs.enable) e = e - 1;
+  end
+  wbm1.wb_rd1(0, 4'b1, dat_o);
+  $display("%m : %t : Data out: %h", $time, dat_o);
+  @(posedge clk);
+  wbm1.wb_rd1(0, 4'b1, dat_o);
+  $display("%m : %t : Data out: %h", $time, dat_o);
+  $display("%m : Finish");
+  e = 800;
+  while (e > 0)
+  begin
+    @(posedge clk)
+    if (uart_rcv.regs.enable) e = e - 1;
+  end
+  e = 800;
+  while (e > 0)
+  begin
+    @(posedge clk)
+    if (uart_rcv.regs.enable) e = e - 1;
+  end
+  $finish;
 end
 
 //always @(uart_rcv.regs.rstate)
 //begin
-//	$display($time,": Receiver state changed to: ", uart_rcv.regs.rstate);
+//  $display($time,": Receiver state changed to: ", uart_rcv.regs.rstate);
 //end
 
 initial
-	begin
-		`ifdef DATA_BUS_WIDTH_8
+  begin
+    `ifdef DATA_BUS_WIDTH_8
 $display("DATA BUS IS 8");
 `else
 $display("DATA BUS IS 32");
 `endif
-		$display("%d %d", `UART_ADDR_WIDTH, `UART_DATA_WIDTH);
+    $display("%d %d", `UART_ADDR_WIDTH, `UART_DATA_WIDTH);
 
-	end
+  end
 
 
 always
 begin
-	#5 clkr = ~clk;
+  #5 clkr = ~clk;
 end
 
 endmodule
