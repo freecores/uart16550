@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.29  2001/12/12 09:05:46  mohor
+// LSR status bit 0 was not cleared correctly in case of reseting the FCR (rx fifo).
+//
 // Revision 1.28  2001/12/10 19:52:41  gorban
 // Scratch register added
 //
@@ -690,7 +693,7 @@ always  @(posedge clk or posedge wb_rst_i)
 always  @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i) thre_int_pnd <= #1 0; 
 	else 
-		thre_int_pnd <= #1 fifo_write || iir_read ? 0 : 
+		thre_int_pnd <= #1 fifo_write || (iir_read & ~iir[`UART_II_IP] & iir[`UART_II_II] == `UART_II_THRE)? 0 : 
 							thre_int_rise ? 1 :
 							thre_int_pnd && ier[`UART_IE_THRE];
 
