@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.10  2001/10/20 09:58:40  gorban
+// Small synopsis fixes
+//
 // Revision 1.9  2001/08/24 21:01:12  mohor
 // Things connected to parity changed.
 // Clock devider changed.
@@ -104,39 +107,40 @@
 
 `include "uart_defines.v"
 
-module uart_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_pad_o, state, tf_count, tx_reset);
+module uart_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_pad_o, state, tf_count, tx_reset, rx_lsr_mask);
 
-input				clk;
-input				wb_rst_i;
-input	[7:0]			lcr;
-input				tf_push;
-input	[7:0]			wb_dat_i;
-input				enable;
-input				tx_reset;
-output				stx_pad_o;
-output	[2:0]			state;
-output	[`UART_FIFO_COUNTER_W-1:0]	tf_count;
+input 										clk;
+input 										wb_rst_i;
+input [7:0] 								lcr;
+input 										tf_push;
+input [7:0] 								wb_dat_i;
+input 										enable;
+input 										tx_reset;
+input 										rx_lsr_mask; //reset of fifo
+output 										stx_pad_o;
+output [2:0] 								state;
+output [`UART_FIFO_COUNTER_W-1:0] 	tf_count;
 
-reg	[2:0]	state;
-reg	[4:0]	counter;
-reg	[2:0]	bit_counter;   // counts the bits to be sent
-reg	[6:0]	shift_out;	// output shift register
-reg		stx_o_tmp;
-reg		parity_xor;  // parity of the word
-reg		tf_pop;
-reg		bit_out;
+reg [2:0] 									state;
+reg [4:0] 									counter;
+reg [2:0] 									bit_counter;   // counts the bits to be sent
+reg [6:0] 									shift_out;	// output shift register
+reg 											stx_o_tmp;
+reg 											parity_xor;  // parity of the word
+reg 											tf_pop;
+reg 											bit_out;
 
 // TX FIFO instance
 //
 // Transmitter FIFO signals
-wire	[`UART_FIFO_WIDTH-1:0]	tf_data_in;
-wire	[`UART_FIFO_WIDTH-1:0]	tf_data_out;
-wire				tf_push;
-wire				tf_underrun;
-wire				tf_overrun;
-wire	[`UART_FIFO_COUNTER_W-1:0]	tf_count;
+wire [`UART_FIFO_WIDTH-1:0] 			tf_data_in;
+wire [`UART_FIFO_WIDTH-1:0] 			tf_data_out;
+wire 											tf_push;
+wire 											tf_underrun;
+wire 											tf_overrun;
+wire [`UART_FIFO_COUNTER_W-1:0] 		tf_count;
 
-assign tf_data_in = wb_dat_i;
+assign 										tf_data_in = wb_dat_i;
 
 uart_fifo fifo_tx(	// error bit signal is not used in transmitter FIFO
 	.clk(		clk		), 
@@ -150,7 +154,7 @@ uart_fifo fifo_tx(	// error bit signal is not used in transmitter FIFO
 	.count(		tf_count	),
 	.error_bit(),                 // Ta ni priklopljen. Prej je manjkal, dodal Igor
 	.fifo_reset(	tx_reset	),
-	.reset_status(1'b0)
+	.reset_status(rx_lsr_mask)
 );
 
 // TRANSMITTER FINAL STATE MACHINE
@@ -247,9 +251,9 @@ begin
 					else
 					begin
 						case ({lcr[`UART_LC_EP],lcr[`UART_LC_SP]})
-						2'b00:	bit_out <= #1 parity_xor;
+						2'b00:	bit_out <= #1 ~parity_xor;
 						2'b01:	bit_out <= #1 1'b1;
-						2'b10:	bit_out <= #1 ~parity_xor;
+						2'b10:	bit_out <= #1 parity_xor;
 						2'b11:	bit_out <= #1 1'b0;
 						endcase
 						state <= #1 s_send_parity;

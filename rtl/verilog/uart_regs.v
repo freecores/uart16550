@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.13  2001/10/20 09:58:40  gorban
+// Small synopsis fixes
+//
 // Revision 1.12  2001/10/19 16:21:40  gorban
 // Changes data_out to be synchronous again as it should have been.
 //
@@ -207,7 +210,7 @@ wire	[3:0]			counter_b;
 wire            rx_lsr_mask;
 
 // Transmitter Instance
-uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_pad_o, state, tf_count, tx_reset);
+uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_pad_o, state, tf_count, tx_reset, rx_lsr_mask);
 
 // Receiver Instance
 uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
