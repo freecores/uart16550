@@ -37,11 +37,11 @@
 `define II_II	3:1	// Interrupt identification
 
 // Interrupt identification values for bits 3:1
-`define II_RLS	3b`011	// Receiver Line Status
-`define II_RDA	3b`010	// Receiver Data available
-`define II_TI	3b`110	// Timeout Indication
-`define II_THRE	3b`001	// Transmitter Holding Register empty
-`define II_MS	3b`000	// Modem Status
+`define II_RLS	3'b011	// Receiver Line Status
+`define II_RDA	3'b010	// Receiver Data available
+`define II_TI	3'b110	// Timeout Indication
+`define II_THRE	3'b001	// Transmitter Holding Register empty
+`define II_MS	3'b000	// Modem Status
 
 // FIFO Control Register bits
 `define FC_CR	0	// Clear receiver
@@ -49,10 +49,10 @@
 `define FC_TL	3:2	// Trigger level
 
 // FIFO trigger level values
-`define FC_1	2b`00
-`define FC_4	2b`01
-`define FC_8	2b`10
-`define FC_14	2b`11
+`define FC_1	2'b00
+`define FC_4	2'b01
+`define FC_8	2'b10
+`define FC_14	2'b11
 
 // Line Control register bits
 `define LC_BITS	1:0	// bits in character

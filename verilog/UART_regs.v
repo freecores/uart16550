@@ -321,7 +321,7 @@ begin
 	end
 	else
 	begin
-		rls_int  <= #1 lsr[`LS_OE] | lsr[`LS_PE] | lsr['LS_FE] | lsr[`LS_BE];
+		rls_int  <= #1 lsr[`LS_OE] | lsr[`LS_PE] | lsr[`LS_FE] | lsr[`LS_BE];
 		rda_int  <= #1 (rf_count >= trigger_level);
 		thre_int <= #1 lsr[`LS_TFE];
 		ms_int   <= #1 | msr[7:4]; // modem interrupt is pending when one of the modem inputs is asserted
