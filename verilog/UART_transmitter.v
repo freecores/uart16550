@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
-////  UART_TX_FIFO.v                                              ////
+////  UART_transmitter.v                                          ////
 ////                                                              ////
 ////                                                              ////
 ////  This file is part of the "UART 16550 compatible" project    ////
@@ -15,14 +15,13 @@
 ////  16550D uart (mostly supported)                              ////
 ////                                                              ////
 ////  Overview (main Features):                                   ////
-////  UART core WISHBONE interface.                               ////
+////  UART core transmitter logic                                 ////
 ////                                                              ////
 ////  Known problems (limits):                                    ////
-////  Inserts one wait state on all transfers.                    ////
-////  Note affected signals and the way they are affected.        ////
+////  None known                                                  ////
 ////                                                              ////
 ////  To Do:                                                      ////
-////  Nothing.                                                    ////
+////  Thourough testing.                                          ////
 ////                                                              ////
 ////  Author(s):                                                  ////
 ////      - gorban@opencores.org                                  ////
@@ -63,62 +62,188 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
-// Revision 1.0  2001-05-17 21:27:13+02  jacob
+// Revision 1.0  2001-05-17 21:27:12+02  jacob
 // Initial revision
 //
 //
 
-// UART core WISHBONE interface 
-//
-// Author: Jacob Gorban   (jacob.gorban@flextronicssemi.com)
-// Company: Flextronics Semiconductor
-//
-// Releases:
-//              1.1     First release
-//
-
 `include "timescale.v"
+`include "UART_defines.v"
 
-module UART_wb (clk,
-        wb_rst_i, 
-	wb_we_i, wb_stb_i, wb_cyc_i, wb_ack_o, wb_addr_i,
-	we_o // Write enable output for the core
-	
-        );
+module UART_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_o, state, tf_count);
 
 input				clk;
-
-// WISHBONE interface	
 input				wb_rst_i;
-input   [`ADDR_WIDTH-1:0]	wb_addr_i;
-//input   [7:0]			wb_dat_i;
-//output  [7:0]			wb_dat_o;
-input				wb_we_i;
-input				wb_stb_i;
-input				wb_cyc_i;
-output				wb_ack_o;
-//output				int_o;
-output				we_o;
-//output	[`ADDR_WIDTH-1:0]	addr_i;
-//output	[7:0]			dat_i;
+input	[7:0]			lcr;
+input				tf_push;
+input	[7:0]			wb_dat_i;
+input				enable;
+output				stx_o;
+output				state;
+output	[`FIFO_COUNTER_W-1:0]	tf_count;
 
-wire				we_o;
-reg				wb_ack_o;
-//reg	[7:0]			wb_dat_i;
-//reg	[7:0]			wb_dat_o;
-//reg	[`ADDR_WIDTH-1:0]	wb_addr_i;
+reg	[2:0]	state;
+reg	[3:0]	counter16;
+reg	[2:0]	bit_counter;   // counts the bits to be sent
+reg	[6:0]	shift_out;	// output shift register
+reg		stx_o;
+reg		parity_xor;  // parity of the word
+reg		tf_pop;
+reg		bit_out;
+
+// TX FIFO instance
+//
+// Transmitter FIFO signals
+wire	[`FIFO_WIDTH-1:0]	tf_data_in;
+wire	[`FIFO_WIDTH-1:0]	tf_data_out;
+wire				tf_push;
+wire				tf_underrun;
+wire				tf_overrun;
+wire	[`FIFO_COUNTER_W-1:0]	tf_count;
+
+assign tf_data_in = wb_dat_i;
+
+UART_TX_FIFO fifo_tx(clk, wb_rst_i, tf_data_in, tf_data_out,
+	tf_push, tf_pop, tf_underrun, tf_overrun, tf_count);
+
+// TRANSMITTER FINAL STATE MACHINE
+
+`define S_IDLE        0
+`define S_SEND_START  1
+`define S_SEND_BYTE   2
+`define S_SEND_PARITY 3
+`define S_SEND_STOP   4
+`define S_POP_BYTE    5
+
 always @(posedge clk or posedge wb_rst_i)
 begin
-	if (wb_rst_i == 1)
-	begin
-		wb_ack_o <= #1 0;
-	end
-	else
-	begin
-		wb_ack_o <= #1 wb_stb_i & wb_cyc_i; // 1 clock wait state on all transfers
-	end
-end
+  if (wb_rst_i)
+  begin
+	state       <= #1 `S_IDLE;
+	stx_o       <= #1 0;
+	counter16   <= #1 0;
+	shift_out   <= #1 0;
+	bit_out     <= #1 0;
+	parity_xor  <= #1 0;
+	tf_pop      <= #1 0;
+	bit_counter <= #1 0;
+  end
+  else
+  if (enable)
+  begin
+	case (state)
+	`S_IDLE	 :	if (~|tf_count) // if tf_count==0
+			begin
+				state <= #1 `S_IDLE;
+				stx_o <= #1 0;
+			end
+			else
+			begin
+				tf_pop <= #1 0;
+				stx_o  <= #1 0;
+				state  <= #1 `S_POP_BYTE;
+			end
+	`S_POP_BYTE :	begin
+				tf_pop <= #1 1;
+				case (lcr[/*`LC_BITS*/1:0])  // number of bits in a word
+				2'b00 : begin
+					bit_counter <= #1 3'b100;
+					parity_xor  <= #1 ^tf_data_out[4:0];
+				     end
+				2'b01 : begin
+					bit_counter <= #1 3'b101;
+					parity_xor  <= #1 ^tf_data_out[5:0];
+				     end
+				2'b10 : begin
+					bit_counter <= #1 3'b110;
+					parity_xor  <= #1 ^tf_data_out[6:0];
+				     end
+				2'b11 : begin
+					bit_counter <= #1 3'b111;
+					parity_xor  <= #1 ^tf_data_out[7:0];
+				     end
+				endcase
+				{shift_out[6:0], bit_out} <= #1 tf_data_out;
+				state <= #1 `S_SEND_START;
+			end
+	`S_SEND_START :	begin
+				tf_pop <= #1 0;
+				if (~|counter16)
+					counter16 <= #1 4'b1111;
+				else
+				if (counter16 == 1)
+				begin
+					counter16 <= #1 0;
+					state <= #1 `S_SEND_BYTE;
+				end
+				else
+					counter16 <= #1 counter16 - 1;
+				stx_o <= #1 1;
+			end
+	`S_SEND_BYTE :	begin
+				if (~|counter16)
+					counter16 <= #1 4'b1111;
+				else
+				if (counter16 == 1)
+				begin
+					if (|bit_counter) // if bit_counter>0
+					begin
+						bit_counter <= #1 bit_counter - 1;
+						{shift_out[5:0],bit_out  } <= #1 {shift_out[6:1], shift_out[0]};
+						state <= #1 `S_SEND_BYTE;
+					end
+					else   // end of byte
+					if (~lcr[`LC_PE])
+					begin
+						state <= #1 `S_SEND_STOP;
+					end
+					else
+					begin
+						case ({lcr[`LC_EP],lcr[`LC_SP]})
+						2'b00:	bit_out <= #1 ~parity_xor;
+						2'b01:	bit_out <= #1 1;
+						2'b10:	bit_out <= #1 parity_xor;
+						2'b11:	bit_out <= #1 0;
+						endcase
+						state <= #1 `S_SEND_PARITY;
+					end
+					counter16 <= #1 0;
+				end
+				else
+					counter16 <= #1 counter16 - 1;
+				stx_o <= #1 bit_out; // set output pin
+			end
+	`S_SEND_PARITY :	begin
+				if (~|counter16)
+					counter16 <= #1 4'b1111;
+				else
+				if (counter16 == 1)
+				begin
+					counter16 <= #1 0;
+					state <= #1 `S_SEND_STOP;
+				end
+				else
+					counter16 <= #1 counter16 - 1;
+				stx_o <= #1 bit_out;
+			end
+	`S_SEND_STOP :  begin
+				if (~|counter16)
+					counter16 <= #1 4'b1111;
+				else
+				if (counter16 == 1)
+				begin
+					counter16 <= #1 0;
+					state <= #1 `S_IDLE;
+				end
+				else
+					counter16 <= #1 counter16 - 1;
+				stx_o <= #1 0;
+			end
 
-assign we_o = wb_we_i & wb_cyc_i & wb_stb_i; //WE for registers	
-
+		default : // should never get here
+			state <= #1 `S_IDLE;
+	endcase
+  end // end if enable
+end // transmitter logic
+	
 endmodule

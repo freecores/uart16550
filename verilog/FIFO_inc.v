@@ -1,10 +1,89 @@
-/// File:  FIFO_inc.v
-/// Author: Jacob Gorban, Flextronics Semiconductor
-///
-/// This file is FIFO logic. It should be included in your FIFO.
-/// A module envelope should be created in the parent file.
-/// The reason for creating this in a included module is being able to create custom FIFOs,
-/// like modules with different ports or additional logic on the FIFO except the standard, easily
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+////  FIFO_inc.v                                                  ////
+////                                                              ////
+////                                                              ////
+////  This file is part of the "UART 16550 compatible" project    ////
+////  http://www.opencores.org/cores/uart16550/                   ////
+////                                                              ////
+////  Documentation related to this project:                      ////
+////  - http://www.opencores.org/cores/uart16550/                 ////
+////                                                              ////
+////  Projects compatibility:                                     ////
+////  - WISHBONE                                                  ////
+////  RS232 Protocol                                              ////
+////  16550D uart (mostly supported)                              ////
+////                                                              ////
+////  Overview (main Features):                                   ////
+////  This file is synchronic FIFO logic. It should be included   ////
+////  in your FIFO. A module envelope should be created in the    ////
+////  parent file. The reason for creating this in a included     ////
+////  module is being able to create custom FIFOs, like modules   ////
+////  with different ports or additional logic on the FIFO        ////
+////  except the standard, easily.                                ////
+////                                                              ////
+////  Notice that asserting push signals actually writes on the   ////
+////  next clock after asserting push.                            ////
+////  But the pop signal moves the pointer to the next valid      ////
+////  signal. In other words, the output of the FIFO is always    ////
+////  the signal that is the next signal to be read, so you read  ////
+////  the next byte from FIFO and assert the pop signal on the    ////
+////  same clock to move to next byte.                            ////
+////                                                              ////
+////  Also, there's a rise detection on the push and pop signals, ////
+////  so holding the signals for a long time won't repeat         ////
+////  operation. You should deassert these signals and then       ////
+////  assert at the time needed.                                  ////
+////                                                              ////
+////  Known problems (limits):                                    ////
+////  No known problems. But pay attent to implementation.        ////
+////                                                              ////
+////  To Do:                                                      ////
+////  Nothing or verification.                                    ////
+////                                                              ////
+////  Author(s):                                                  ////
+////      - gorban@opencores.org                                  ////
+////      - Jacob Gorban                                          ////
+////                                                              ////
+////  Created:        2001/05/12                                  ////
+////  Last Updated:   2001/05/17                                  ////
+////                  (See log for the revision history           ////
+////                                                              ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+//// Copyright (C) 2000 Jacob Gorban, gorban@opencores.org        ////
+////                                                              ////
+//// This source file may be used and distributed without         ////
+//// restriction provided that this copyright statement is not    ////
+//// removed from the file and that any derivative work contains  ////
+//// the original copyright notice and the associated disclaimer. ////
+////                                                              ////
+//// This source file is free software; you can redistribute it   ////
+//// and/or modify it under the terms of the GNU Lesser General   ////
+//// Public License as published by the Free Software Foundation; ////
+//// either version 2.1 of the License, or (at your option) any   ////
+//// later version.                                               ////
+////                                                              ////
+//// This source is distributed in the hope that it will be       ////
+//// useful, but WITHOUT ANY WARRANTY; without even the implied   ////
+//// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ////
+//// PURPOSE.  See the GNU Lesser General Public License for more ////
+//// details.                                                     ////
+////                                                              ////
+//// You should have received a copy of the GNU Lesser General    ////
+//// Public License along with this source; if not, download it   ////
+//// from http://www.opencores.org/lgpl.shtml                     ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+//
+// CVS Revision History
+//
+// $Log: not supported by cvs2svn $
+// Revision 1.0  2001-05-17 21:27:10+02  jacob
+// Initial revision
+//
+//
 
 // FIFO parameters
 parameter fifo_width = `FIFO_WIDTH;
@@ -35,26 +114,68 @@ reg	[fifo_counter_w-1:0]	count;
 reg				overrun;
 reg				underrun;
 
+// These registers and signals are to detect rise of of the signals.
+// Not that it slows the maximum rate by 2, meaning you must reset the signals and then
+// assert them again for the operation to repeat
+// This is done to accomodate wait states
+reg				push_delay; 
+reg				pop_delay;
+
+wire				push_rise = push_delay & push;
+wire				pop_rise  = pop_delay  & pop;
+
 wire [fifo_pointer_w-1:0] top_plus_1 = top + 1;
 
-//always @(posedge clk or posedge wb_rst_i) // synchronous FIFO
-always @(posedge push or posedge pop or posedge wb_rst_i)  // asynchronous FIFO
+always @(posedge clk or posedge wb_rst_i)
+begin
+	if (wb_rst_i)
+		push_delay <= #1 0;
+	else
+		push_delay <= #1 ~push;
+end
+
+always @(posedge clk or posedge wb_rst_i)
+begin
+	if (wb_rst_i)
+		pop_delay <= #1 0;
+	else
+		pop_delay <= #1 ~pop;
+end
+
+
+always @(posedge clk or posedge wb_rst_i) // synchronous FIFO
 begin
 	if (wb_rst_i==1)
 	begin
 		top		<= #1 0;
-		bottom		<= #1 0;
+		bottom		<= #1 1;
 		underrun	<= #1 0;
 		overrun		<= #1 0;
 		count		<= #1 0;
+		fifo[0]		<= #1 8'b0;
+		fifo[1]		<= #1 8'b0;
+		fifo[2]		<= #1 8'b0;
+		fifo[3]		<= #1 8'b0;
+		fifo[4]		<= #1 8'b0;
+		fifo[5]		<= #1 8'b0;
+		fifo[6]		<= #1 8'b0;
+		fifo[7]		<= #1 8'b0;
+		fifo[8]		<= #1 8'b0;
+		fifo[9]		<= #1 8'b0;
+		fifo[10]	<= #1 8'b0;
+		fifo[11]	<= #1 8'b0;
+		fifo[12]	<= #1 8'b0;
+		fifo[13]	<= #1 8'b0;
+		fifo[14]	<= #1 8'b0;
+		fifo[15]	<= #1 8'b0;
 	end
 	else
 	begin
-		case ({push, pop})
-//		2'b00 : begin  // this will never happen, really
-//				underrun <= #1 0;
-//				overrun  <= #1 0;
-//	 	        end
+		case ({push_rise, pop_rise})
+		2'b00 : begin  // this will never happen, really
+				underrun <= #1 0;
+				overrun  <= #1 0;
+	 	        end
 		2'b10 : if (count==fifo_depth)  // overrun condition
 			begin
 				overrun   <= #1 1;
@@ -89,16 +210,8 @@ begin
 		        end
 		endcase
 	end
+
 end   // always
-
-always @(posedge clk)
-begin
-	if (overrun)
-		overrun <= #1 0;
-	if (underrun)
-		underrun <= #1 0;
-end
-
 
 // please note though that data_out is only valid one clock after pop signal
 assign data_out = fifo[bottom];
