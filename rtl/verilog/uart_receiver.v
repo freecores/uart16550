@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.29  2002/07/29 21:16:18  gorban
+// The uart_defines.v file is included again in sources.
+//
 // Revision 1.28  2002/07/22 23:02:23  gorban
 // Bug Fixes:
 //  * Possible loss of sync and bad reception of stop bit on slow baud rates fixed.
@@ -299,6 +302,7 @@ begin
 			end
 		end
 	sr_rec_start :	begin
+  			rf_push 			  <= #1 1'b0;
 				if (rcounter16_eq_7)    // check the pulse
 					if (srx_pad_i==1'b1)   // no start bit
 						rstate <= #1 sr_idle;
@@ -401,7 +405,14 @@ begin
       		  rf_push 		  <= #1 1'b1;
     				rstate        <= #1 sr_idle;
           end
-            
+        else
+          begin
+       			rf_data_in  <= #1 {rshift, 1'b0, rparity_error, rframing_error};
+      		  rf_push 		  <= #1 1'b1;
+      			rcounter16 	  <= #1 4'b1110;
+    				rstate 		  <= #1 sr_rec_start;
+          end
+                      
 			end
 	default : rstate <= #1 sr_idle;
 	endcase
