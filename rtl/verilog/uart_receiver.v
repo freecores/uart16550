@@ -63,6 +63,14 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.15  2001/11/26 21:38:54  gorban
+// Lots of fixes:
+// Break condition wasn't handled correctly at all.
+// LSR bits could lose their values.
+// LSR value after reset was wrong.
+// Timing of THRE interrupt signal corrected.
+// LSR bit 0 timing corrected.
+//
 // Revision 1.14  2001/11/10 12:43:21  gorban
 // Synthesis bugs fixed. Some other minor changes
 //
@@ -220,6 +228,7 @@ begin
 		  rf_data_in 	 <= #1 {8'b0, 3'b100}; // break input (empty character) to receiver FIFO
 		  rf_push 		 <= #1 1'b1;
 	  end
+  else
   if (enable)
   begin
 	case (rstate)
