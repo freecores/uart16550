@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.21  2001/11/12 14:57:27  mohor
+// ti_int_pnd error fixed.
+//
 // Revision 1.20  2001/11/12 14:50:27  mohor
 // ti_int_d error fixed.
 //
@@ -466,7 +469,7 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr1_d <= #1 lsr1;
 
 always @(posedge clk or posedge wb_rst_i)
-	if (wb_rst_i) lsr1_d <= #1 0;
+	if (wb_rst_i) lsr1r <= #1 0;
 	else	lsr1r <= #1	lsr_mask ? 0 : lsr1 && ~lsr1_d; // set on rise
 
 // lsr bit 2 (parity error)
