@@ -64,9 +64,6 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
-// Revision 1.13  2002/02/07 16:20:20  gorban
-// major bug in 32-bit mode that prevented register access fixed.
-//
 // Revision 1.12  2001/12/19 08:03:34  mohor
 // Warnings cleared.
 //
@@ -121,7 +118,7 @@
 // synopsys translate_off
 `include "timescale.v"
 // synopsys translate_on
-`include "uart_defines.v"
+//`include "uart_defines.v"
  
 module uart_wb (clk, wb_rst_i, 
 	wb_we_i, wb_stb_i, wb_cyc_i, wb_ack_o, wb_adr_i,
@@ -226,6 +223,8 @@ always  @(posedge clk or posedge wb_rst_i)
 		wb_sel_is <= #1 wb_sel_i;
 	end
 
+assign wb_adr_int = wb_adr_is;
+
 `ifdef DATA_BUS_WIDTH_8 // 8-bit data bus
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i)
@@ -235,8 +234,6 @@ always @(posedge clk or posedge wb_rst_i)
 
 always @(wb_dat_is)
 	wb_dat8_i = wb_dat_is;
-
-assign wb_adr_int = wb_adr_is;
 
 `else // 32-bit bus
 // put output to the correct byte in 32 bits using select line
@@ -262,24 +259,6 @@ always @(wb_sel_is or wb_dat_is)
 		default : wb_dat8_i = wb_dat_is[7:0];
 	endcase // case(wb_sel_i)
 
-reg [1:0] adr2 ; // lower 2 bits of regenerated address
-always @(wb_sel_is)
-	case (wb_sel_is)
-    `ifdef BIG_BYTE_ENDIAN
-		4'b0001 : adr2 = 2'b11;
-		4'b0010 : adr2 = 2'b10;
-		4'b0100 : adr2 = 2'b01;
-		4'b1000 : adr2 = 2'b00;
-    `else
-		4'b0001 : adr2 = 2'b00;
-		4'b0010 : adr2 = 2'b01;
-		4'b0100 : adr2 = 2'b10;
-		4'b1000 : adr2 = 2'b11;
-    `endif
-		default : adr2 = 2'b0;
-	endcase // case(wb_sel_is)
-		
-assign 	 wb_adr_int = {wb_adr_is[`UART_ADDR_WIDTH-1:2], adr2};
 `endif // !`ifdef DATA_BUS_WIDTH_8
 
 endmodule

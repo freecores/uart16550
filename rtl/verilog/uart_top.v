@@ -64,6 +64,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.17  2001/12/19 08:40:03  mohor
+// Warnings fixed (unused signals removed).
+//
 // Revision 1.16  2001/12/06 14:51:04  gorban
 // Bug in LSR[0] is fixed.
 // All WISHBONE signals are now sampled, so another wait-state is introduced on all transfers.
@@ -116,7 +119,7 @@
 `include "timescale.v"
 // synopsys translate_on
 
-`include "uart_defines.v"
+// `include "uart_defines.v"
 
 module uart_top	(
 	wb_clk_i, 
@@ -131,7 +134,9 @@ module uart_top	(
 
 	// modem signals
 	rts_pad_o, cts_pad_i, dtr_pad_o, dsr_pad_i, ri_pad_i, dcd_pad_i
-
+`ifdef UART_HAS_BAUDRATE_OUTPUT
+	, baud_o
+`endif
 	);
 
 parameter 							 uart_data_width = `UART_DATA_WIDTH;
@@ -160,6 +165,12 @@ output 								 dtr_pad_o;
 input 								 dsr_pad_i;
 input 								 ri_pad_i;
 input 								 dcd_pad_i;
+
+// optional baudrate output
+`ifdef UART_HAS_BAUDRATE_OUTPUT
+output	baud_o;
+`endif
+
 
 wire 									 stx_pad_o;
 wire 									 rts_pad_o;
@@ -216,7 +227,7 @@ uart_wb		wb_interface(
 		.we_o(		we_o		),
 		.re_o(re_o)
 		);
-`else // !`ifdef DATA_BUS_WIDTH_8
+`else
 uart_wb		wb_interface(
 		.clk(		wb_clk_i		),
 		.wb_rst_i(	wb_rst_i	),
@@ -235,7 +246,7 @@ uart_wb		wb_interface(
 		.we_o(		we_o		),
 		.re_o(re_o)
 		);
-`endif // !`ifdef DATA_BUS_WIDTH_8
+`endif
 
 // Registers
 uart_regs	regs(
@@ -268,6 +279,10 @@ uart_regs	regs(
 	.rts_pad_o(		rts_pad_o		),
 	.dtr_pad_o(		dtr_pad_o		),
 	.int_o(		int_o		)
+`ifdef UART_HAS_BAUDRATE_OUTPUT
+	, .baud_o(baud_o)
+`endif
+
 );
 
 `ifdef DATA_BUS_WIDTH_8
@@ -288,7 +303,21 @@ uart_debug_if dbg(/*AUTOINST*/
 						.tf_count				 (tf_count[`UART_FIFO_COUNTER_W-1:0]),
 						.tstate					 (tstate[2:0]),
 						.rstate					 (rstate[3:0]));
-`endif //  `ifdef DATA_BUS_WIDTH_8
+`endif 
+
+initial
+begin
+	`ifdef DATA_BUS_WIDTH_8
+		$display("(%m) UART INFO: Data bus width is 8. No Debug interface.\n");
+	`else
+		$display("(%m) UART INFO: Data bus width is 32. Debug Interface present.\n");
+	`endif
+	`ifdef UART_HAS_BAUDRATE_OUTPUT
+		$display("(%m) UART INFO: Has baudrate output\n");
+	`else
+		$display("(%m) UART INFO: Doesn't have baudrate output\n");
+	`endif
+end
 
 endmodule
 

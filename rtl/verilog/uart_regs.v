@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.37  2001/12/27 13:24:09  mohor
+// lsr[7] was not showing overrun errors.
+//
 // Revision 1.36  2001/12/20 13:25:46  mohor
 // rx push changed to be only one cycle wide.
 //
@@ -195,7 +198,7 @@
 `include "timescale.v"
 // synopsys translate_on
 
-`include "uart_defines.v"
+//`include "uart_defines.v"
 
 `define UART_DL1 7:0
 `define UART_DL2 15:8
@@ -213,6 +216,10 @@ module uart_regs (clk,
 ier, iir, fcr, mcr, lcr, msr, lsr, rf_count, tf_count, tstate, rstate,
 `endif				
 	rts_pad_o, dtr_pad_o, int_o
+`ifdef UART_HAS_BAUDRATE_OUTPUT
+	, baud_o
+`endif
+
 	);
 
 input 									clk;
@@ -230,6 +237,9 @@ input [3:0] 							modem_inputs;
 output 									rts_pad_o;
 output 									dtr_pad_o;
 output 									int_o;
+`ifdef UART_HAS_BAUDRATE_OUTPUT
+output	baud_o;
+`endif
 
 `ifdef DATA_BUS_WIDTH_8
 `else
@@ -250,6 +260,11 @@ output [3:0] 							rstate;
 
 wire [3:0] 								modem_inputs;
 reg 										enable;
+`ifdef UART_HAS_BAUDRATE_OUTPUT
+assign baud_o = enable; // baud_o is actually the enable signal
+`endif
+
+
 wire 										stx_pad_o;		// received from transmitter module
 wire 										srx_pad_i;
 
@@ -333,10 +348,16 @@ reg  [7:0]                block_cnt;   // While counter counts, THRE status is b
 reg  [7:0]                block_value; // One character length minus stop bit
 
 // Transmitter Instance
-uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_pad_o, tstate, tf_count, tx_reset, lsr_mask);
+wire serial_out;
+
+uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, serial_out, tstate, tf_count, tx_reset, lsr_mask);
+
+// handle loopback
+wire serial_in = loopback ? serial_out : srx_pad_i;
+assign stx_pad_o = loopback ? 1'b1 : serial_out;
 
 // Receiver Instance
-uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, 
+uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, serial_in, enable, 
 	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate, rf_push_pulse);
 
 

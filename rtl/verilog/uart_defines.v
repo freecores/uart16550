@@ -112,9 +112,7 @@
 // remove comments to restore use to the old version with 8 data bit interface
 // in new mode (32bit bus), the wb_sel_i signal is used to pus data in correct place
 // also, in 8-bit version there'll be no debugging features included
-// `define DATA_BUS_WIDTH_8
-
-`define BIG_BYTE_ENDIAN     // Defines endian
+//`define DATA_BUS_WIDTH_8
 
 `ifdef DATA_BUS_WIDTH_8
  `define UART_ADDR_WIDTH 3
@@ -123,6 +121,13 @@
  `define UART_ADDR_WIDTH 5
  `define UART_DATA_WIDTH 32
 `endif
+
+// Uncomment this if you want your UART to have 
+// 16xBaudrate output port.
+// If defined, the enable signal will be used to drive baudrate_o signal
+// It's frequency is 16xbaudrate
+
+// `define UART_HAS_BAUDRATE_OUTPUT
 
 // Register addresses
 `define UART_REG_RB	`UART_ADDR_WIDTH'd0	// receiver buffer

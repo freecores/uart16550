@@ -63,6 +63,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.27  2001/12/30 20:39:13  mohor
+// More than one character was stored in case of break. End of the break
+// was not detected correctly.
+//
 // Revision 1.26  2001/12/20 13:28:27  mohor
 // Missing declaration of rf_push_q fixed.
 //
@@ -170,7 +174,7 @@
 `include "timescale.v"
 // synopsys translate_on
 
-`include "uart_defines.v"
+//`include "uart_defines.v"
 
 module uart_receiver (clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, 
 	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate, rf_push_pulse);
@@ -216,7 +220,7 @@ wire				rf_error_bit; // an error (parity or framing) is inside the fifo
 wire 				break_error = (counter_b == 0);
 
 // RX FIFO instance
-uart_fifo #(`UART_FIFO_REC_WIDTH) fifo_rx(
+uart_rfifo #(`UART_FIFO_REC_WIDTH) fifo_rx(
 	.clk(		clk		), 
 	.wb_rst_i(	wb_rst_i	),
 	.data_in(	rf_data_in	),
@@ -247,7 +251,6 @@ parameter  sr_end_bit				= 4'd7;
 parameter  sr_ca_lc_parity	      = 4'd8;
 parameter  sr_wait1 					= 4'd9;
 parameter  sr_push 					= 4'd10;
-parameter  sr_last 					= 4'd11;
 
 
 always @(posedge clk or posedge wb_rst_i)
@@ -273,10 +276,10 @@ begin
 	sr_idle : begin
 			rf_push 			  <= #1 1'b0;
 			rf_data_in 	  <= #1 0;
+			rcounter16 	  <= #1 4'b1110;
 			if (srx_pad_i==1'b0 & ~break_error)   // detected a pulse (start bit?)
 			begin
 				rstate 		  <= #1 sr_rec_start;
-				rcounter16 	  <= #1 4'b1110;
 			end
 		end
 	sr_rec_start :	begin
@@ -380,15 +383,9 @@ begin
             else
         			rf_data_in  <= #1 {rshift, 1'b0, rparity_error, rframing_error};
       		  rf_push 		  <= #1 1'b1;
-    				rstate        <= #1 sr_last;
+    				rstate        <= #1 sr_idle;
           end
             
-			end
-	sr_last :	begin
-				if (rcounter16_eq_1 & srx_pad_i | break_error)
-					rstate <= #1 sr_idle;
-				rcounter16 <= #1 rcounter16_minus_1;
-				rf_push    <= #1 1'b0;
 			end
 	default : rstate <= #1 sr_idle;
 	endcase

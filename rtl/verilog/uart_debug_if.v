@@ -54,6 +54,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.3  2001/12/19 08:40:03  mohor
+// Warnings fixed (unused signals removed).
+//
 // Revision 1.2  2001/12/12 22:17:30  gorban
 // some synthesis bugs fixed
 //
@@ -65,7 +68,7 @@
 `include "timescale.v"
 // synopsys translate_on
 
-`include "uart_defines.v"
+//`include "uart_defines.v"
 
 module uart_debug_if (/*AUTOARG*/
 // Outputs

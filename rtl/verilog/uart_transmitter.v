@@ -133,7 +133,7 @@
 `include "timescale.v"
 // synopsys translate_on
 
-`include "uart_defines.v"
+//`include "uart_defines.v"
 
 module uart_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_pad_o, tstate, tf_count, tx_reset, lsr_mask);
 
@@ -164,21 +164,20 @@ reg 											bit_out;
 wire [`UART_FIFO_WIDTH-1:0] 			tf_data_in;
 wire [`UART_FIFO_WIDTH-1:0] 			tf_data_out;
 wire 											tf_push;
-//wire 											tf_overrun;
+wire 											tf_overrun;
 wire [`UART_FIFO_COUNTER_W-1:0] 		tf_count;
 
 assign 										tf_data_in = wb_dat_i;
 
-uart_fifo fifo_tx(	// error bit signal is not used in transmitter FIFO
+uart_tfifo fifo_tx(	// error bit signal is not used in transmitter FIFO
 	.clk(		clk		), 
 	.wb_rst_i(	wb_rst_i	),
 	.data_in(	tf_data_in	),
 	.data_out(	tf_data_out	),
 	.push(		tf_push		),
 	.pop(		tf_pop		),
-	.overrun(	/*tf_overrun*/	),
+	.overrun(	tf_overrun	),
 	.count(		tf_count	),
-	.error_bit(),                 // Ta ni priklopljen. Prej je manjkal, dodal Igor
 	.fifo_reset(	tx_reset	),
 	.reset_status(lsr_mask)
 );
