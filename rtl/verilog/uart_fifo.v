@@ -63,6 +63,14 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.7  2001/08/23 16:05:05  mohor
+// Stop bit bug fixed.
+// Parity bug fixed.
+// WISHBONE read cycle bug fixed,
+// OE indicator (Overrun Error) bug fixed.
+// PE indicator (Parity Error) bug fixed.
+// Register read bug fixed.
+//
 // Revision 1.3  2001/05/31 20:08:01  gorban
 // FIFO changes and other corrections.
 //
@@ -227,12 +235,14 @@ begin
 			end
 			else
 			begin
+        fifo[bottom] <= #1 0;
 				bottom   <= #1 bottom + 1;
 //				overrun  <= #1 1'b0;  Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
 				overrun  <= #1 1'b0;
 				count	 <= #1 count - 1;
 			end
 		2'b11 : begin
+        fifo[bottom] <= #1 0;
 				bottom   <= #1 bottom + 1;
 				top       <= #1 top_plus_1;
 //				fifo[top_plus_1] <= #1 data_in; igor
