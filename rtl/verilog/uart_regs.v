@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.16  2001/11/02 09:55:16  mohor
+// no message
+//
 // Revision 1.15  2001/10/31 15:19:22  gorban
 // Fixes to break and timeout conditions
 //
@@ -130,97 +133,105 @@ module uart_regs (clk,
 	rts_pad_o, dtr_pad_o, int_o
 	);
 
-input		clk;
-input		wb_rst_i;
-input	[`UART_ADDR_WIDTH-1:0]	wb_addr_i;
-input	[7:0]	wb_dat_i;
-output	[7:0]	wb_dat_o;
-input		wb_we_i;
-input   wb_re_i;
+input 									clk;
+input 									wb_rst_i;
+input [`UART_ADDR_WIDTH-1:0] 		wb_addr_i;
+input [7:0] 							wb_dat_i;
+output [7:0] 							wb_dat_o;
+input 									wb_we_i;
+input 									wb_re_i;
 
-output		stx_pad_o;
-input		srx_pad_i;
+output 									stx_pad_o;
+input 									srx_pad_i;
 
-input	[3:0]	modem_inputs;
-output		rts_pad_o;
-output		dtr_pad_o;
-output		int_o;
+input [3:0] 							modem_inputs;
+output 									rts_pad_o;
+output 									dtr_pad_o;
+output 									int_o;
 
-wire	[3:0]	modem_inputs;
-reg		enable;
-wire		stx_pad_o;		// received from transmitter module
-wire		srx_pad_i;
+wire [3:0] 								modem_inputs;
+reg 										enable;
+wire 										stx_pad_o;		// received from transmitter module
+wire 										srx_pad_i;
 
-reg	[7:0]	wb_dat_o;
+reg [7:0] 								wb_dat_o;
 
-wire	[`UART_ADDR_WIDTH-1:0]	wb_addr_i;
-wire	[7:0]	wb_dat_i;
+wire [`UART_ADDR_WIDTH-1:0] 		wb_addr_i;
+wire [7:0] 								wb_dat_i;
 
 
-reg	[3:0]	ier;
-reg	[3:0]	iir;
-reg	[1:0]	fcr;  /// bits 7 and 6 of fcr. Other bits are ignored
-reg	[4:0]	mcr;
-reg	[7:0]	lcr;
-reg	[7:0]	lsr;
-reg	[7:0]	msr;
-reg	[15:0]	dl;  // 32-bit divisor latch
-reg		start_dlc; // activate dlc on writing to UART_DL1
-reg		lsr_mask;
-reg		msi_reset; // reset MSR 4 lower bits indicator
-reg		threi_clear; // THRE interrupt clear flag
-reg	[15:0]	dlc;  // 32-bit divisor latch counter
-reg		int_o;
+reg [3:0] 								ier;
+reg [3:0] 								iir;
+reg [1:0] 								fcr;  /// bits 7 and 6 of fcr. Other bits are ignored
+reg [4:0] 								mcr;
+reg [7:0] 								lcr;
+reg [7:0] 								msr;
+reg [15:0] 								dl;  // 32-bit divisor latch
+reg 										start_dlc; // activate dlc on writing to UART_DL1
+reg 										lsr_mask_d; // delay for lsr_mask condition
+reg 										msi_reset; // reset MSR 4 lower bits indicator
+reg 										threi_clear; // THRE interrupt clear flag
+reg [15:0] 								dlc;  // 32-bit divisor latch counter
+reg 										int_o;
 
-reg	[3:0]	trigger_level; // trigger level of the receiver FIFO
-reg		rx_reset;
-reg		tx_reset;
+reg [3:0] 								trigger_level; // trigger level of the receiver FIFO
+reg 										rx_reset;
+reg 										tx_reset;
 
-wire		dlab;			   // divisor latch access bit
-wire		cts_pad_i, dsr_pad_i, ri_pad_i, dcd_pad_i; // modem status bits
-wire		loopback;		   // loopback bit (MCR bit 4)
-wire		cts, dsr, ri, dcd;	   // effective signals (considering loopback)
-wire		rts_pad_o, dtr_pad_o;		   // modem control outputs
+wire 										dlab;			   // divisor latch access bit
+wire 										cts_pad_i, dsr_pad_i, ri_pad_i, dcd_pad_i; // modem status bits
+wire 										loopback;		   // loopback bit (MCR bit 4)
+wire 										cts, dsr, ri, dcd;	   // effective signals (considering loopback)
+wire 										rts_pad_o, dtr_pad_o;		   // modem control outputs
+
+// LSR bits wires and regs
+wire [7:0] 								lsr;
+wire 										lsr0, lsr1, lsr2, lsr3, lsr4, lsr5, lsr6, lsr7;
+reg										lsr0r, lsr1r, lsr2r, lsr3r, lsr4r, lsr5r, lsr6r, lsr7r;
+wire 										lsr_mask; // lsr_mask
 
 //
 // ASSINGS
 //
-assign {cts_pad_i, dsr_pad_i, ri_pad_i, dcd_pad_i} = modem_inputs;
-assign {cts, dsr, ri, dcd} = loopback ? {mcr[`UART_MC_RTS],mcr[`UART_MC_DTR],mcr[`UART_MC_OUT1],mcr[`UART_MC_OUT2]}
-		 : ~{cts_pad_i,dsr_pad_i,ri_pad_i,dcd_pad_i};
 
-assign dlab = lcr[`UART_LC_DL];
-assign loopback = mcr[4];
+assign 									lsr[7:0] = { lsr7r, lsr6r, lsr5r, lsr4r, lsr3r, lsr2r, lsr1r, lsr0r };
+
+assign 									{cts_pad_i, dsr_pad_i, ri_pad_i, dcd_pad_i} = modem_inputs;
+assign 									{cts, dsr, ri, dcd} = loopback ? {mcr[`UART_MC_RTS],mcr[`UART_MC_DTR],mcr[`UART_MC_OUT1],mcr[`UART_MC_OUT2]}
+											: ~{cts_pad_i,dsr_pad_i,ri_pad_i,dcd_pad_i};
+
+assign 									dlab = lcr[`UART_LC_DL];
+assign 									loopback = mcr[4];
 
 // assign modem outputs
-assign	rts_pad_o = mcr[`UART_MC_RTS];
-assign	dtr_pad_o = mcr[`UART_MC_DTR];
+assign 									rts_pad_o = mcr[`UART_MC_RTS];
+assign 									dtr_pad_o = mcr[`UART_MC_DTR];
 
 // Interrupt signals
-reg	rls_int;  // receiver line status interrupt
-reg	rda_int;  // receiver data available interrupt
-reg	ti_int;   // timeout indicator interrupt
-reg	thre_int; // transmitter holding register empty interrupt
-reg	ms_int;   // modem status interrupt
+wire 										rls_int;  // receiver line status interrupt
+wire 										rda_int;  // receiver data available interrupt
+wire 										ti_int;   // timeout indicator interrupt
+wire										thre_int; // transmitter holding register empty interrupt
+wire 										ms_int;   // modem status interrupt
 
 // FIFO signals
-reg				tf_push;
-reg				rf_pop;
-wire	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_out;
-wire				rf_error_bit; // an error (parity or framing) is inside the fifo
-wire	[`UART_FIFO_COUNTER_W-1:0]	rf_count;
-wire	[`UART_FIFO_COUNTER_W-1:0]	tf_count;
-wire	[2:0]			state;
-wire	[9:0]			counter_t;
-wire	[7:0]			counter_b;
-wire            rx_lsr_mask;
+reg 										tf_push;
+reg 										rf_pop;
+wire [`UART_FIFO_REC_WIDTH-1:0] 	rf_data_out;
+wire 										rf_error_bit; // an error (parity or framing) is inside the fifo
+wire [`UART_FIFO_COUNTER_W-1:0] 	rf_count;
+wire [`UART_FIFO_COUNTER_W-1:0] 	tf_count;
+wire [2:0] 								state;
+wire [9:0] 								counter_t;
+wire [7:0] 								counter_b;
+
 
 // Transmitter Instance
-uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_pad_o, state, tf_count, tx_reset, rx_lsr_mask);
+uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_pad_o, state, tf_count, tx_reset, lsr_mask);
 
 // Receiver Instance
 uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
-	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, rx_lsr_mask);
+	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask);
 
 
 always @(posedge clk or posedge wb_rst_i)   // synchrounous reading
@@ -242,28 +253,10 @@ begin
 	`UART_REG_LS	: wb_dat_o <= #1 lsr;
 	`UART_REG_MS	: wb_dat_o <= #1 msr;
 	default:  wb_dat_o <= #1 8'b0; // ??
-	endcase
+	endcase // case(wb_addr_i)
     else
 	wb_dat_o <= #1 8'b0;
-end
-
-/*
-always @(wb_addr_i or dlab or dl or rf_data_out or ier or iir or lcr or lsr or msr)
-begin
-	case (wb_addr_i)
-	`UART_REG_RB : if (dlab) // Receiver FIFO or DL byte 1
-        			wb_dat_o <= dl[`UART_DL1];
-		        else
-			        wb_dat_o <= rf_data_out[9:2];
-	`UART_REG_IE	: wb_dat_o <= dlab ? dl[`UART_DL2] : ier;
-	`UART_REG_II	: wb_dat_o <= {4'b1100,iir};
-	`UART_REG_LC	: wb_dat_o <= lcr;
-	`UART_REG_LS	: wb_dat_o <= lsr;
-	`UART_REG_MS	: wb_dat_o <= msr;
-	default:  wb_dat_o <= 8'b0; // ??
-	endcase
-end
-*/
+end // always @ (posedge clk or posedge wb_rst_i)
 
 // rf_pop signal handling
 always @(posedge clk or posedge wb_rst_i)
@@ -278,20 +271,29 @@ begin
 		rf_pop <= #1 1; // advance read pointer
 end
 
-// lsr_mask signal handling
+wire 	lsr_mask_condition;
+wire 	iir_read;
+wire  msr_read;
+wire	fifo_read;
+wire	thre_write;
+
+assign lsr_mask_condition = (wb_re_i && wb_addr_i == `UART_REG_LS && !dlab);
+assign iir_read = (wb_re_i && wb_addr_i == `UART_REG_II && !dlab);
+assign msr_read = (wb_re_i && wb_addr_i == `UART_REG_MS && !dlab);
+assign fifo_read = (wb_re_i && wb_addr_i == `UART_REG_RB && !dlab);
+assign thre_write = (wb_we_i && wb_addr_i == `UART_REG_TR && !dlab);
+
+// lsr_mask_d delayed signal handling
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
-		lsr_mask <= #1 0;
-	else
-	if (lsr_mask)
-		lsr_mask <= #1 0;
-	else
-	if (wb_re_i && wb_addr_i == `UART_REG_LS && !dlab)
-		lsr_mask <= #1 1; // reset bits in the Line Status Register
+		lsr_mask_d <= #1 0;
+	else // reset bits in the Line Status Register
+		lsr_mask_d <= #1 lsr_mask_condition;
 end
 
-assign rx_lsr_mask = lsr_mask;
+// lsr_mask is rise detected
+assign lsr_mask = lsr_mask_condition && ~lsr_mask_d;
 
 // msi_reset signal handling
 always @(posedge clk or posedge wb_rst_i)
@@ -312,7 +314,7 @@ begin
 	if (wb_rst_i)
 		threi_clear <= #1 0;
 	else
-	if (threi_clear && !lsr[`UART_LS_TFE] && (tf_count==0)) // reset clear flag when tx fifo clears
+	if (!lsr[`UART_LS_TFE] && (tf_count==0)) // reset clear flag when tx fifo clears
 		threi_clear <= #1 0;
 	else
 	if (wb_re_i && wb_addr_i == `UART_REG_II)
@@ -358,7 +360,7 @@ always @(posedge clk or posedge wb_rst_i)
 		fcr <= #1 wb_dat_i[7:6];
 		rx_reset <= #1 wb_dat_i[1];
 		tx_reset <= #1 wb_dat_i[2];
-	end else begin // clear rx_reset, tx_reset signals when not written to
+	end else begin
 		rx_reset <= #1 0;
 		tx_reset <= #1 0;
 	end
@@ -391,12 +393,12 @@ always @(posedge clk or posedge wb_rst_i)
 		begin
 			tf_push   <= #1 1'b1;
 			start_dlc <= #1 1'b0;
-		end
+		end // else: !if(dlab)
 	else
 	begin
 		start_dlc <= #1 1'b0;
 		tf_push   <= #1 1'b0;
-	end
+	end // else: !if(dlab)
 
 // Receiver FIFO trigger level selection logic (asynchronous mux)
 always @(fcr)
@@ -405,7 +407,7 @@ always @(fcr)
 		2'b01 : trigger_level = 4;
 		2'b10 : trigger_level = 8;
 		2'b11 : trigger_level = 14;
-	endcase
+	endcase // case(fcr[`UART_FC_TL])
 	
 //
 //  STATUS REGISTERS  //
@@ -424,37 +426,112 @@ begin
 end
 
 // Line Status Register
-always @(posedge clk or posedge wb_rst_i)
-begin
-	if (wb_rst_i)
-		lsr <= #1 8'b01100000;
-	else
-	if (lsr_mask)
-		lsr <= #1 lsr & 8'b00000001;
-	else
-	begin
-		lsr[0] <= #1 (rf_count!=4'b0);  // data in receiver fifo available
-		lsr[1] <= #1 rf_overrun;     // Receiver overrun error
-		lsr[2] <= #1 rf_data_out[1]; // parity error bit
-		lsr[3] <= #1 rf_data_out[0]; // framing error bit
-		lsr[4] <= #1 (counter_b==8'b0); // break counter reached 0
-		lsr[5] <= #1 (tf_count==5'b0);  // transmitter fifo is empty
-		lsr[6] <= #1 (tf_count==5'b0 && (state == /*`S_IDLE */ 0)); // transmitter empty
-		lsr[7] <= #1 rf_error_bit;
-	end
-end
 
+// activation conditions
+assign lsr0 = (rf_count!=4'b0);  // data in receiver fifo available
+assign lsr1 = rf_overrun;     // Receiver overrun error
+assign lsr2 = rf_data_out[1]; // parity error bit
+assign lsr3 = rf_data_out[0]; // framing error bit
+assign lsr4 = (counter_b==8'b0); // break counter reached 0
+assign lsr5 = (tf_count==5'b0);  // transmitter fifo is empty
+assign lsr6 = (tf_count==5'b0 && (state == /*`S_IDLE */ 0)); // transmitter empty
+assign lsr7 = rf_error_bit;
+
+// lsr bit0 (receiver data available)
+always @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) lsr0r <= #1 0;
+	else lsr0r <= #1 lsr0;
+
+// lsr bit 1 (receiver overrun)
+reg lsr1_d; // delayed
+
+always @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) lsr1_d <= #1 0;
+	else lsr1_d <= #1 lsr1;
+
+always @(posedge clk or posedge wb_rst_i)
+	lsr1r <= #1 wb_rst_i ? 0 : // clear status on read
+				lsr_mask ? 0 : lsr1 && ~lsr1_d; // set on rise
+
+// lsr bit 2 (parity error)
+reg lsr2_d; // delayed
+
+always @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) lsr2_d <= #1 0;
+	else lsr2_d <= #1 lsr2;
+
+always @(posedge clk or posedge wb_rst_i)
+	lsr2r <= #1 wb_rst_i ? 0 : // clear status on read
+				lsr_mask ? 0 : lsr2 && ~lsr2_d; // set on rise
+
+// lsr bit 3 (framing error)
+reg lsr3_d; // delayed
+
+always @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) lsr3_d <= #1 0;
+	else lsr3_d <= #1 lsr3;
+
+always @(posedge clk or posedge wb_rst_i)
+	lsr3r <= #1 wb_rst_i ? 0 : // clear status on read
+				lsr_mask ? 0 : lsr3 && ~lsr3_d; // set on rise
+
+// lsr bit 4 (break indicator)
+reg lsr4_d; // delayed
+
+always @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) lsr4_d <= #1 0;
+	else lsr4_d <= #1 lsr4;
+
+always @(posedge clk or posedge wb_rst_i)
+	lsr4r <= #1  wb_rst_i ? 0 :
+			  lsr_mask ? 0 : lsr4 && ~lsr4_d;
+
+
+// lsr bit 5 (transmitter fifo is empty)
+reg lsr5_d;
+wire tx_fifo_write;
+assign tx_fifo_write = (wb_we_i && ~dlab && wb_addr_i==`UART_REG_TR);
+
+always @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) lsr5_d <= #1 0;
+	else lsr5_d <= #1 lsr5;
+
+always @(posedge clk or posedge wb_rst_i)
+	lsr5r <= #1 wb_rst_i ? 1 :
+			(lsr_mask || iir_read || tx_fifo_write) ? 0 :  lsr5 && ~lsr5_d;
+
+// lsr bit 6 (transmitter empty indicator)
+reg lsr6_d;
+
+always @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) lsr6_d <= #1 0;
+	else lsr6_d <= #1 lsr6;
+
+always @(posedge clk or posedge wb_rst_i)
+	lsr6r <= #1 wb_rst_i ? 1 :
+				 (lsr_mask || tx_fifo_write) ? 0 : lsr6 && ~lsr6_d;
+
+// lsr bit 7 (error in fifo)
+reg lsr7_d;
+
+always @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) lsr7_d <= #1 0;
+	else lsr7_d <= #1 lsr7;
+
+always @(posedge clk or posedge wb_rst_i)
+	lsr7r <= #1  wb_rst_i ? 0 :
+			  lsr_mask ? 0 : lsr7 && ~lsr7_d;
 
 // Frequency divider
-always @(posedge clk or posedge wb_rst_i)
+always @(posedge clk or posedge wb_rst_i) 
 begin
 	if (wb_rst_i)
 		dlc <= #1 0;
 	else
-  if (start_dlc | ~ (|dlc))
-  	dlc <= #1 dl - 1;               // preset counter
-	else
-		dlc <= #1 dlc - 1;              // decrement counter
+		if (start_dlc | ~ (|dlc))
+  			dlc <= #1 dl - 1;               // preset counter
+		else
+			dlc <= #1 dlc - 1;              // decrement counter
 end
 
 // Enable signal generation logic
@@ -463,50 +540,105 @@ begin
 	if (wb_rst_i)
 		enable <= #1 1'b0;
 	else
-  if (|dl & ~(|dlc))     // dl>0 & dlc==0
-		enable <= #1 1'b1;
-  else
-		enable <= #1 1'b0;
+		if (|dl & ~(|dlc))     // dl>0 & dlc==0
+			enable <= #1 1'b1;
+		else
+			enable <= #1 1'b0;
 end
-
-
-
-
-
-
 
 //
 //	INTERRUPT LOGIC
 //
-always @(posedge clk or posedge wb_rst_i)
-begin
-	if (wb_rst_i)
-	begin
-		rls_int  <= #1 1'b0;
-		rda_int  <= #1 1'b0;
-		ti_int   <= #1 1'b0;
-		thre_int <= #1 1'b0;
-		ms_int   <= #1 1'b0;
-	end
-	else
-	begin
-		rls_int  <= #1 ier[`UART_IE_RLS] && (lsr[`UART_LS_OE] || lsr[`UART_LS_PE] || lsr[`UART_LS_FE] || lsr[`UART_LS_BI]);
-		rda_int  <= #1 ier[`UART_IE_RDA] && (rf_count >= {1'b0,trigger_level});
-		thre_int <= #1 threi_clear ? 0 : ier[`UART_IE_THRE] && lsr[`UART_LS_TFE];
-		ms_int   <= #1 ier[`UART_IE_MS] && (| msr[3:0]);
-		ti_int   <= #1 ier[`UART_IE_RDA] && (counter_t == 10'b0);
-	end
-end
 
+assign rls_int  = ier[`UART_IE_RLS] && (lsr[`UART_LS_OE] || lsr[`UART_LS_PE] || lsr[`UART_LS_FE] || lsr[`UART_LS_BI]);
+assign rda_int  = ier[`UART_IE_RDA] && (rf_count >= {1'b0,trigger_level});
+assign thre_int = threi_clear ? 0 : ier[`UART_IE_THRE] && lsr[`UART_LS_TFE];
+assign ms_int   = ier[`UART_IE_MS] && (| msr[3:0]);
+assign ti_int   = ier[`UART_IE_RDA] && (counter_t == 10'b0);
+
+reg 	 rls_int_d;
+reg 	 thre_int_d;
+reg 	 ms_int_d;
+reg 	 ti_int_d;
+
+// delay lines
+always  @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) rls_int_d <= #1 0;
+	else rls_int_d <= #1 rls_int;
+
+always  @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) thre_int_d <= #1 0;
+	else thre_int_d <= #1 thre_int;
+
+always  @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) ms_int_d <= #1 0;
+	else ms_int_d <= #1 ms_int;
+
+always  @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) rls_int_d <= #1 0;
+	else ti_int_d <= #1 ti_int;
+
+// rise detection signals
+
+wire 	 rls_int_rise;
+wire 	 thre_int_rise;
+wire 	 ms_int_rise;
+wire 	 ti_int_rise;
+
+assign rls_int_rise 	  = rls_int & ~rls_int_d;
+assign thre_int_rise   = thre_int & ~thre_int_d;
+assign ms_int_rise 	  = ms_int & ~ms_int_d;
+assign ti_int_rise 	  = ti_int & ~ti_int_d;
+
+// interrupt pending flags
+reg 	rls_int_pnd;
+reg 	thre_int_pnd;
+reg 	ms_int_pnd;
+reg 	ti_int_pnd;
+
+// interrupt pending flags assignments
+always  @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) rls_int_pnd <= #1 0; 
+	else 
+		rls_int_pnd <= #1 lsr_mask ? 0 :  						// reset condition
+							rls_int_rise ? 1 :						// latch condition
+							rls_int_pnd && ier[`UART_IE_RLS];	// default operation: remove if masked
+
+always  @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) thre_int_pnd <= #1 0; 
+	else 
+		thre_int_pnd <= #1 thre_write || iir_read ? 0 : 
+							thre_int_rise ? 1 :
+							thre_int_pnd && ier[`UART_IE_THRE];
+
+always  @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) ms_int_pnd <= #1 0; 
+	else 
+		ms_int_pnd <= #1 msr_read ? 0 : 
+							ms_int_rise ? 1 :
+							ms_int_pnd && ier[`UART_IE_MS];
+
+always  @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i) ms_int_pnd <= #1 0; 
+	else 
+		ti_int_pnd <= #1 fifo_read ? 0 : 
+							ti_int_rise ? 1 :
+							ti_int_pnd && ier[`UART_IE_RDA];
+// end of pending flags
+
+// INT_O logic
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)	
 		int_o <= #1 1'b0;
 	else
-		if (| {rls_int,rda_int,thre_int,ms_int,ti_int})
-			int_o <= #1 1'b1;
-		else
-			int_o <= #1 1'b0;
+		int_o <= #1 
+					rls_int_pnd		?	~lsr_mask					:
+					rda_int			? 1								:
+					ti_int_pnd		? ~fifo_read					:
+					thre_int_pnd	? !(thre_write & iir_read) :
+					ms_int_pnd		? ~msr_read						:
+					0;	// if no interrupt are pending
 end
 
 
@@ -516,36 +648,31 @@ begin
 	if (wb_rst_i)
 		iir <= #1 1;
 	else
-	if (rls_int)  // interrupt occured and is enabled  (not masked)
+	if (rls_int_pnd)  // interrupt is pending
 	begin
 		iir[`UART_II_II] <= #1 `UART_II_RLS;	// set identification register to correct value
 		iir[`UART_II_IP] <= #1 1'b0;		// and clear the IIR bit 0 (interrupt pending)
-	end
-	else
+	end else // the sequence of conditions determines priority of interrupt identification
 	if (rda_int)
 	begin
 		iir[`UART_II_II] <= #1 `UART_II_RDA;
 		iir[`UART_II_IP] <= #1 1'b0;
 	end
-	else
-	if (ti_int)
+	else if (ti_int_pnd)
 	begin
 		iir[`UART_II_II] <= #1 `UART_II_TI;
 		iir[`UART_II_IP] <= #1 1'b0;
 	end
-	else
-	if (thre_int)
+	else if (thre_int_pnd)
 	begin
 		iir[`UART_II_II] <= #1 `UART_II_THRE;
 		iir[`UART_II_IP] <= #1 1'b0;
 	end
-	else
-	if (ms_int)
+	else if (ms_int_pnd)
 	begin
 		iir[`UART_II_II] <= #1 `UART_II_MS;
 		iir[`UART_II_IP] <= #1 1'b0;
-	end
-	else	// no interrupt is pending
+	end else	// no interrupt is pending
 	begin
 		iir[`UART_II_IP] <= #1 1'b1;
 	end

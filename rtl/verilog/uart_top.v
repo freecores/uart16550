@@ -64,6 +64,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.13  2001/10/20 09:58:40  gorban
+// Small synopsis fixes
+//
 // Revision 1.12  2001/08/25 15:46:19  gorban
 // Modified port names again
 //
@@ -168,20 +171,20 @@ uart_wb		wb_interface(
 
 // Registers
 uart_regs	regs(
-		.clk(		wb_clk_i		),
-		.wb_rst_i(	wb_rst_i	),
-		.wb_addr_i(	wb_adr_i	),
-		.wb_dat_i(	wb_dat_i	),
-		.wb_dat_o(	wb_dat_o	),
-		.wb_we_i(	we_o		),
-    .wb_re_i(re_o),
-		.modem_inputs(	{cts_pad_i, dsr_pad_i,
-				 ri_pad_i,  dcd_pad_i}	),
-		.stx_pad_o(		stx_pad_o		),
-		.srx_pad_i(		srx_pad_i		),
-		.rts_pad_o(		rts_pad_o		),
-		.dtr_pad_o(		dtr_pad_o		),
-		.int_o(		int_o		)
-		);
+	.clk(		wb_clk_i		),
+	.wb_rst_i(	wb_rst_i	),
+	.wb_addr_i(	wb_adr_i	),
+	.wb_dat_i(	wb_dat_i	),
+	.wb_dat_o(	wb_dat_o	),
+	.wb_we_i(	we_o		),
+   .wb_re_i(re_o),
+	.modem_inputs(	{cts_pad_i, dsr_pad_i,
+	ri_pad_i,  dcd_pad_i}	),
+	.stx_pad_o(		stx_pad_o		),
+	.srx_pad_i(		srx_pad_i		),
+	.rts_pad_o(		rts_pad_o		),
+	.dtr_pad_o(		dtr_pad_o		),
+	.int_o(		int_o		)
+);
 
 endmodule

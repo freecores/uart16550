@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.11  2001/10/29 17:00:46  gorban
+// fixed parity sending and tx_fifo resets over- and underrun
+//
 // Revision 1.10  2001/10/20 09:58:40  gorban
 // Small synopsis fixes
 //
@@ -107,7 +110,7 @@
 
 `include "uart_defines.v"
 
-module uart_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_pad_o, state, tf_count, tx_reset, rx_lsr_mask);
+module uart_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_pad_o, state, tf_count, tx_reset, lsr_mask);
 
 input 										clk;
 input 										wb_rst_i;
@@ -116,7 +119,7 @@ input 										tf_push;
 input [7:0] 								wb_dat_i;
 input 										enable;
 input 										tx_reset;
-input 										rx_lsr_mask; //reset of fifo
+input 										lsr_mask; //reset of fifo
 output 										stx_pad_o;
 output [2:0] 								state;
 output [`UART_FIFO_COUNTER_W-1:0] 	tf_count;
@@ -154,7 +157,7 @@ uart_fifo fifo_tx(	// error bit signal is not used in transmitter FIFO
 	.count(		tf_count	),
 	.error_bit(),                 // Ta ni priklopljen. Prej je manjkal, dodal Igor
 	.fifo_reset(	tx_reset	),
-	.reset_status(rx_lsr_mask)
+	.reset_status(lsr_mask)
 );
 
 // TRANSMITTER FINAL STATE MACHINE

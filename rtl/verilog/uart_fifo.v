@@ -64,6 +64,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.10  2001/10/20 09:58:40  gorban
+// Small synopsis fixes
+//
 // Revision 1.9  2001/08/24 21:01:12  mohor
 // Things connected to parity changed.
 // Clock devider changed.
@@ -239,10 +242,11 @@ begin
 				overrun   <= #1 0;
 				count     <= #1 count + 1;
 			end
-		2'b01 : if (~|count)
+		2'b01 : if (~|count) // underrun
 			begin
 //				overrun  <= #1 1'b0;  Igor Ko se postavita ostaneta aktivna tako dolgo, dokler se ne naredi read LSR registra
 				overrun  <= #1 1'b0;
+				underrun <= #1 1'b1;
 			end
 			else
 			begin

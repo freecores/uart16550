@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.11  2001/10/31 15:19:22  gorban
+// Fixes to break and timeout conditions
+//
 // Revision 1.10  2001/10/20 09:58:40  gorban
 // Small synopsis fixes
 //
@@ -108,7 +111,7 @@
 `include "uart_defines.v"
 
 module uart_receiver (clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
-	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, rx_lsr_mask);
+	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask);
 
 input				clk;
 input				wb_rst_i;
@@ -118,7 +121,7 @@ input				srx_pad_i;
 input				enable;
 input				rda_int;
 input				rx_reset;
-input       rx_lsr_mask;
+input       lsr_mask;
 
 output	[9:0]			counter_t;
 output	[7:0]			counter_b;
@@ -160,7 +163,7 @@ uart_fifo #(`UART_FIFO_REC_WIDTH) fifo_rx(
 	.count(		rf_count	),
 	.error_bit(	rf_error_bit	),
 	.fifo_reset(	rx_reset	),
-	.reset_status(rx_lsr_mask)
+	.reset_status(lsr_mask)
 );
 
 wire 		rcounter16_eq_7 = (rcounter16 == 4'd7);
@@ -272,16 +275,16 @@ begin
 			end
 	sr_ca_lc_parity : begin    // rcounter equals 6
 				rcounter16  <= #1 rcounter16_minus_1;
-//				rparity_xor <= #1 ^{rshift,rparity}; // calculate parity on all incoming data
-				rparity_xor <= #1 ^rshift; // calculate parity on all incoming data
+				rparity_xor <= #1 ^{rshift,rparity}; // calculate parity on all incoming data
+//				rparity_xor <= #1 ^rshift; // calculate parity on all incoming data
 				rstate      <= #1 sr_check_parity;
 			  end
 	sr_check_parity: begin	  // rcounter equals 5
 				case ({lcr[`UART_LC_EP],lcr[`UART_LC_SP]})
-				2'b00: rparity_error <= #1  rparity_xor != rparity;  // no error if parity 1
-				2'b01: rparity_error <= #1 ~rparity;      // parity should sticked to 1
-				2'b10: rparity_error <= #1 ~rparity_xor != rparity;   // error if parity is odd
-				2'b11: rparity_error <= #1  rparity;	  // parity should be sticked to 0
+					2'b00: rparity_error <= #1  rparity_xor == 0;  // no error if parity 1
+					2'b01: rparity_error <= #1 ~rparity;      // parity should sticked to 1
+					2'b10: rparity_error <= #1  rparity_xor == 1;   // error if parity is odd
+					2'b11: rparity_error <= #1  rparity;	  // parity should be sticked to 0
 				endcase
 				rcounter16 <= #1 rcounter16_minus_1;
 				rstate <= #1 sr_wait1;
@@ -331,13 +334,11 @@ begin
 		counter_b <= #1 8'd191;
 	else
 	if (enable)  // only work on enable times
-		if (!srx_pad_i)                                                       // Ta vrstica je bila spremenjena igor !!!
+		if (!srx_pad_i || rstate == sr_idle)
 			counter_b <= #1 8'd191; // maximum character time length - 1
 		else
-			if (counter_b != 8'b0 && counter_b != 8'hff)            // break reached
+			if (counter_b != 8'b0)            // break not reached it
 				counter_b <= #1 counter_b - 8'd1;  // decrement break counter
-			else if (rx_lsr_mask)
-				counter_b <= #1 8'hff; /// this won't generate interrupt status after lsr was read
 end // always of break condition detection
 
 ///
@@ -349,11 +350,10 @@ begin
 	if (wb_rst_i)
 		counter_t <= #1 10'd767;
 	else
-	if (enable)
 		if(rf_push || rf_pop || rda_int || rf_count == 0) // counter is reset when RX FIFO is empty, accessed or above trigger level
 			counter_t <= #1 10'd767;
 		else
-			if (counter_t != 10'b0)  // we don't want to underflow
+			if (	enable && counter_t != 10'b0)  // we don't want to underflow
 				counter_t <= #1 counter_t - 10'd1;		
 end
 	
