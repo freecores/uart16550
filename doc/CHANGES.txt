@@ -1,5 +1,35 @@
 Note: This Changes file is being maintained since 25.5.2001.
 
+22.07.2002
+~~~~~~~~~~
+Notice that this file hasn't been updated for a while so not all changed are present.
+
+Bug Fixes:
+ * Possible loss of sync and bad reception of stop bit on slow baud rates fixed.
+  Problem reported by Kenny.Tung.
+ * Bad (or lack of ) loopback handling fixed. Reported by Cherry Withers.
+
+Improvements:
+ * Made FIFO's as general inferrable memory where possible. 
+ So on FPGA they should be inferred as RAM (Distributed RAM on Xilinx).
+ This saves about 1/3 of the Slice count and reduces P&R and synthesis times.
+
+ * Added optional baudrate output (baud_o). 
+ This is identical to BAUDOUT* signal on 16550 chip. 
+ It outputs 16xbit_clock_rate - the divided clock.
+ It's disabled by default. Define UART_HAS_BAUDRATE_OUTPUT to use.
+
+Note:
+ The uart_defines.v file is no longer included in the source files.
+ So keep this in mind when doing simulation. Add it manually.
+ I've done this, so that you could you your own define files for
+ different configurations. I need this for the IrDA core I develop.
+ You can just uncomment the `includes if you want the old behaviour.
+ The uart_fifo.v file is no longer used. Intead uart_rfifo.v and uart_tfifo.v
+ file are now present. Also raminfr.v in the new inferred ram module.
+
+ Check the new core and I hope you'll like it.
+
 10.08.2001
 ~~~~~~~~~~
 * Modified naming of top signals and defines to be unique and easy to integrate
