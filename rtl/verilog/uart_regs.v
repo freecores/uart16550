@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.20  2001/11/12 14:50:27  mohor
+// ti_int_d error fixed.
+//
 // Revision 1.19  2001/11/10 12:43:21  gorban
 // Synthesis bugs fixed. Some other minor changes
 //
@@ -632,7 +635,7 @@ always  @(posedge clk or posedge wb_rst_i)
 							ms_int_pnd && ier[`UART_IE_MS];
 
 always  @(posedge clk or posedge wb_rst_i)
-	if (wb_rst_i) ms_int_pnd <= #1 0; 
+	if (wb_rst_i) ti_int_pnd <= #1 0; 
 	else 
 		ti_int_pnd <= #1 fifo_read ? 0 : 
 							ti_int_rise ? 1 :
