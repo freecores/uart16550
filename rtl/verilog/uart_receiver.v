@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.26  2001/12/20 13:28:27  mohor
+// Missing declaration of rf_push_q fixed.
+//
 // Revision 1.25  2001/12/20 13:25:46  mohor
 // rx push changed to be only one cycle wide.
 //
@@ -264,20 +267,13 @@ begin
 	  rf_data_in 			<= #1 0;
   end
   else
-//	  if (break_error && rstate != sr_idle) // break condition met while receiver is not idle
-//	  begin
-//		  rstate 		 <= #1 sr_idle;
-//		  rf_data_in 	 <= #1 {8'b0, 3'b100}; // break input (empty character) to receiver FIFO
-//		  rf_push 		 <= #1 1'b1;
-//	  end
-//  else
   if (enable)
   begin
 	case (rstate)
 	sr_idle : begin
 			rf_push 			  <= #1 1'b0;
 			rf_data_in 	  <= #1 0;
-			if (srx_pad_i==1'b0)   // detected a pulse (start bit?)
+			if (srx_pad_i==1'b0 & ~break_error)   // detected a pulse (start bit?)
 			begin
 				rstate 		  <= #1 sr_rec_start;
 				rcounter16 	  <= #1 4'b1110;
@@ -389,8 +385,7 @@ begin
             
 			end
 	sr_last :	begin
-//				if (rcounter16_eq_1)
-				if (rcounter16_eq_1 & srx_pad_i)    // igor
+				if (rcounter16_eq_1 & srx_pad_i | break_error)
 					rstate <= #1 sr_idle;
 				rcounter16 <= #1 rcounter16_minus_1;
 				rf_push    <= #1 1'b0;
@@ -437,15 +432,11 @@ begin
 	if (wb_rst_i)
 		counter_b <= #1 8'd159;
 	else
-//  if(lsr_mask)                          igor
-//		counter_b <= #1 brc_value;
-//  else
-	if (enable)  // only work on enable times
-		if (srx_pad_i)
-			counter_b <= #1 brc_value; // character time length - 1
-		else
-  			if (counter_b != 8'b0)            // break not reached it
-				counter_b <= #1 counter_b - 1;  // decrement break counter
+	if (srx_pad_i)
+		counter_b <= #1 brc_value; // character time length - 1
+	else
+	if(enable & counter_b != 8'b0)            // only work on enable times  break not reached.
+		counter_b <= #1 counter_b - 1;  // decrement break counter
 end // always of break condition detection
 
 ///
