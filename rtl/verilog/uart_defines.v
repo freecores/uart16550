@@ -164,3 +164,14 @@
 `define UART_FIFO_COUNTER_W	5
 // receiver fifo has width 10 because it has parity and framing error bits
 `define UART_FIFO_REC_WIDTH  10
+
+
+
+
+
+
+
+`define VERBOSE_WB  0           // All activity on the WISHBONE is recorded
+`define VERBOSE_LINE_STATUS 0   // Details about the lsr (line status register)
+`define FAST_TEST   1           // 64/1024 packets are sent
+
