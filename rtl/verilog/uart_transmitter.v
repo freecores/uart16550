@@ -63,6 +63,15 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.14  2001/12/03 21:44:29  gorban
+// Updated specification documentation.
+// Added full 32-bit data bus interface, now as default.
+// Address is 5-bit wide in 32-bit data bus mode.
+// Added wb_sel_i input to the core. It's used in the 32-bit mode.
+// Added debug interface with two 32-bit read-only registers in 32-bit mode.
+// Bits 5 and 6 of LSR are now only cleared on TX FIFO write.
+// My small test bench is modified to work with 32-bit mode.
+//
 // Revision 1.13  2001/11/08 14:54:23  mohor
 // Comments in Slovene language deleted, few small fixes for better work of
 // old tools. IRQs need to be fix.
@@ -147,7 +156,6 @@ reg 											bit_out;
 wire [`UART_FIFO_WIDTH-1:0] 			tf_data_in;
 wire [`UART_FIFO_WIDTH-1:0] 			tf_data_out;
 wire 											tf_push;
-wire 											tf_underrun;
 wire 											tf_overrun;
 wire [`UART_FIFO_COUNTER_W-1:0] 		tf_count;
 
@@ -160,7 +168,6 @@ uart_fifo fifo_tx(	// error bit signal is not used in transmitter FIFO
 	.data_out(	tf_data_out	),
 	.push(		tf_push		),
 	.pop(		tf_pop		),
-	.underrun(	tf_underrun	),
 	.overrun(	tf_overrun	),
 	.count(		tf_count	),
 	.error_bit(),                 // Ta ni priklopljen. Prej je manjkal, dodal Igor

@@ -64,6 +64,14 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.13  2001/11/26 21:38:54  gorban
+// Lots of fixes:
+// Break condition wasn't handled correctly at all.
+// LSR bits could lose their values.
+// LSR value after reset was wrong.
+// Timing of THRE interrupt signal corrected.
+// LSR bit 0 timing corrected.
+//
 // Revision 1.12  2001/11/08 14:54:23  mohor
 // Comments in Slovene language deleted, few small fixes for better work of
 // old tools. IRQs need to be fix.
@@ -116,7 +124,6 @@ module uart_fifo (clk,
 	push, // push strobe, active high
 	pop,   // pop strobe, active high
 // status signals
-	underrun,
 	overrun,
 	count,
 	error_bit,
@@ -141,7 +148,6 @@ input       reset_status;
 
 output	[fifo_width-1:0]	data_out;
 output				overrun;
-output				underrun;
 output	[fifo_counter_w-1:0]	count;
 output				error_bit;
 
@@ -156,7 +162,6 @@ reg	[fifo_pointer_w-1:0]	bottom;
 
 reg	[fifo_counter_w-1:0]	count;
 reg				overrun;
-reg				underrun;
 
 // These registers and signals are to detect rise of of the signals.
 // Not that it slows the maximum rate by 2, meaning you must reset the signals and then
@@ -193,8 +198,6 @@ begin
 	begin
 		top		<= #1 0;
 		bottom		<= #1 1'b0;
-		underrun	<= #1 1'b0;
-		overrun		<= #1 1'b0;
 		count		<= #1 0;
 		fifo[0]		<= #1 0;
 		fifo[1]		<= #1 0;
@@ -217,44 +220,21 @@ begin
 	if (fifo_reset) begin
 		top		<= #1 0;
 		bottom		<= #1 1'b0;
-		underrun	<= #1 1'b0;
-		overrun		<= #1 1'b0;
 		count		<= #1 0;
 	end
   else
-  if(reset_status)
-    begin
-  		underrun	<= #1 1'b0;
-  		overrun		<= #1 1'b0;
-    end
-	else
 	begin
 		case ({push_rise, pop_rise})
-		2'b00 : begin
-				underrun <= #1 1'b0;
-	 	        end
-		2'b10 : if (count==fifo_depth)  // overrun condition
-			begin
-				overrun   <= #1 1'b1;
-				underrun  <= #1 1'b0;
-			end
-			else
+		2'b10 : if (count<fifo_depth)  // overrun condition
 			begin
 				top       <= #1 top_plus_1;
 				fifo[top] <= #1 data_in;
-				overrun   <= #1 0;
 				count     <= #1 count + 1'b1;
 			end
-		2'b01 : if (~|count) // underrun
-			begin
-				overrun  <= #1 1'b0;
-				underrun <= #1 1'b1;
-			end
-			else
+		2'b01 :
 			begin
         fifo[bottom] <= #1 0;
 				bottom   <= #1 bottom + 1'b1;
-				overrun  <= #1 1'b0;
 				count	 <= #1 count - 1'b1;
 			end
 		2'b11 : begin
@@ -262,12 +242,24 @@ begin
 				bottom   <= #1 bottom + 1'b1;
 				top       <= #1 top_plus_1;
 				fifo[top] <= #1 data_in;
-				underrun <= #1 1'b0;
 		        end
+    default: ;
 		endcase
 	end
-
 end   // always
+
+always @(posedge clk or posedge wb_rst_i) // synchronous FIFO
+begin
+  if (wb_rst_i)
+    overrun   <= #1 1'b0;
+  else
+  if(fifo_reset | reset_status) 
+    overrun   <= #1 1'b0;
+  else
+  if(push_rise & (count==fifo_depth))
+    overrun   <= #1 1'b1;
+end   // always
+
 
 // please note though that data_out is only valid one clock after pop signal
 assign data_out = fifo[bottom];

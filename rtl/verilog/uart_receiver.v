@@ -63,6 +63,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.21  2001/12/13 10:31:16  mohor
+// timeout irq must be set regardless of the rda irq (rda irq does not reset the
+// timeout counter).
+//
 // Revision 1.20  2001/12/10 19:52:05  gorban
 // Igor fixed break condition bugs
 //
@@ -188,7 +192,6 @@ reg	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_in;
 wire	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_out;
 reg				rf_push;
 wire				rf_pop;
-wire				rf_underrun;
 wire				rf_overrun;
 wire	[`UART_FIFO_COUNTER_W-1:0]	rf_count;
 wire				rf_error_bit; // an error (parity or framing) is inside the fifo
@@ -202,7 +205,6 @@ uart_fifo #(`UART_FIFO_REC_WIDTH) fifo_rx(
 	.data_out(	rf_data_out	),
 	.push(		rf_push		),
 	.pop(		rf_pop		),
-	.underrun(	rf_underrun	),
 	.overrun(	rf_overrun	),
 	.count(		rf_count	),
 	.error_bit(	rf_error_bit	),
