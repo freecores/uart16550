@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.25  2001/12/20 13:25:46  mohor
+// rx push changed to be only one cycle wide.
+//
 // Revision 1.24  2001/12/19 08:03:34  mohor
 // Warnings cleared.
 //
@@ -196,6 +199,7 @@ reg		rframing_error;		// framing error flag
 reg		rbit_in;
 reg		rparity_xor;
 reg	[7:0]	counter_b;	// counts the 0 (low) signals
+reg   rf_push_q;
 
 // RX FIFO signals
 reg	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_in;
