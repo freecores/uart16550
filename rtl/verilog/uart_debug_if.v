@@ -54,6 +54,15 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.1  2001/12/04 21:14:16  gorban
+// committed the debug interface file
+//
+
+// synopsys translate_off
+`include "timescale.v"
+// synopsys translate_on
+
+`include "uart_defines.v"
 
 module uart_debug_if (/*AUTOARG*/
 // Outputs
@@ -94,5 +103,5 @@ always @(/*AUTOSENSE*/fcr or ier or iir or lcr or lsr or mcr or msr
 		default: wb_dat32_o = 0;
 	endcase // case(wb_adr_i)
 
-endmodule
+endmodule // uart_debug_if
 
