@@ -101,7 +101,7 @@ wire	[2:0]			wb_addr_i;
 wire	[7:0]			wb_dat_i;
 
 
-
+integer e;
 
 uart_top	uart_snd(
 	clk, 
@@ -166,10 +166,10 @@ assign wb_addr_i = wb_addr_ir;
 assign wb_stb_i = wb_stb_ir;
 assign wb_cyc_i = wb_cyc_ir;
 assign pad_srx_i = pad_srx_ir;
-assign cts_i = cts_ir;
-assign dsr_i = dsr_ir;
-assign ri_i = ri_ir;
-assign dcd_i = dcd_ir;
+assign cts_i = 1; //cts_ir;
+assign dsr_i = 1; //dsr_ir;
+assign ri_i = 1; //ri_ir;
+assign dcd_i = 1; //dcd_ir;
 
 assign wb1_dat_i = wb1_dat_ir;
 assign wb1_we_i = wb1_we_ir;
@@ -177,10 +177,10 @@ assign wb1_addr_i = wb1_addr_ir;
 assign wb1_stb_i = wb1_stb_ir;
 assign wb1_cyc_i = wb1_cyc_ir;
 assign srx1_i = srx1_ir;
-assign cts1_i = cts1_ir;
-assign dsr1_i = dsr1_ir;
-assign ri1_i = ri1_ir;
-assign dcd1_i = dcd1_ir;
+assign cts1_i = 1; //cts1_ir;
+assign dsr1_i = 1; //dsr1_ir;
+assign ri1_i = 1; //ri1_ir;
+assign dcd1_i = 1; //dcd1_ir;
 
 /////////// CONNECT THE UARTS
 always @(pad_stx_o)
@@ -191,7 +191,7 @@ end
 initial
 begin
 	clkr = 0;
-	#20000 $finish;
+	#50000 $finish;
 end
 
 task cycle;    // transmitter
@@ -256,8 +256,20 @@ begin
 	@(posedge clk);
 	$display("%m : %t : sending : %b", $time, 8'b01000101);
 	cycle(1, 0, 8'b01000101);
-	#100;
 	wait (uart_snd.regs.state==0 && uart_snd.regs.transmitter.tf_count==0);
+end
+
+always @(int_o)
+begin
+	if (int_o) begin
+		$display("INT_O high (%0t) %d", $time, e);
+		@(posedge clk);
+		@(posedge clk);
+		@(posedge clk);
+		$display("IIR : %b", uart_rcv.regs.iir);
+	end
+	else
+		$display("INT_O low (%0t)", $time);
 end
 
 // receiver side
@@ -277,13 +289,33 @@ begin
 	@(posedge clk);
 	// restore normal registers
 	cycle1(1, `UART_REG_LC, 8'b00011011);
+	cycle1(1, `UART_REG_IE, 8'b00001111);
 	wait(uart_rcv.regs.receiver.rf_count == 2);
+		e = 800;
+	while (e > 0)
+	begin
+		@(posedge clk)
+ 		if (uart_rcv.regs.enable) e = e - 1;
+	end
+
 	cycle1(0, 0, 0);
 	$display("%m : %t : Data out: %b", $time, wb1_dat_o);
 	@(posedge clk);
 	cycle1(0, 0, 0);
 	$display("%m : %t : Data out: %b", $time, wb1_dat_o);
 	$display("%m : Finish");
+	e = 800;
+	while (e > 0)
+	begin
+		@(posedge clk)
+ 		if (uart_rcv.regs.enable) e = e - 1;
+	end
+	e = 800;
+	while (e > 0)
+	begin
+		@(posedge clk)
+ 		if (uart_rcv.regs.enable) e = e - 1;
+	end
 	$finish;
 end
 
