@@ -63,6 +63,15 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.9  2001/12/03 21:44:29  gorban
+// Updated specification documentation.
+// Added full 32-bit data bus interface, now as default.
+// Address is 5-bit wide in 32-bit data bus mode.
+// Added wb_sel_i input to the core. It's used in the 32-bit mode.
+// Added debug interface with two 32-bit read-only registers in 32-bit mode.
+// Bits 5 and 6 of LSR are now only cleared on TX FIFO write.
+// My small test bench is modified to work with 32-bit mode.
+//
 // Revision 1.8  2001/11/26 21:38:54  gorban
 // Lots of fixes:
 // Break condition wasn't handled correctly at all.
@@ -120,6 +129,7 @@
 `define UART_REG_MC	`UART_ADDR_WIDTH'd4	// Modem control
 `define UART_REG_LS  `UART_ADDR_WIDTH'd5	// Line status
 `define UART_REG_MS  `UART_ADDR_WIDTH'd6	// Modem status
+`define UART_REG_SR  `UART_ADDR_WIDTH'd7	// Scratch register
 `define UART_REG_DL1	`UART_ADDR_WIDTH'd0	// Divisor latch bytes (1-2)
 `define UART_REG_DL2	`UART_ADDR_WIDTH'd1
 
