@@ -1,5 +1,12 @@
 Note: This Changes file is being maintained since 25.5.2001.
 
+2.05.2001
+~~~~~~~~~
+
+* Fixed transmitter and receiver - the start and the stop bits were sent and received complemented.
+  Big thanks go to Bob Kirstein for pointing this out to me.
+
+
 31.05.2001
 ~~~~~~~~~~
 

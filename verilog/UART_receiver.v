@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.4  2001/05/31 20:08:01  gorban
+// FIFO changes and other corrections.
+//
 // Revision 1.3  2001/05/27 17:37:49  gorban
 // Fixed many bugs. Updated spec. Changed FIFO files structure. See CHANGES.txt file.
 //
@@ -170,7 +173,7 @@ begin
   if (enable)
   begin
 	case (rstate)
-	`SR_IDLE :	if (srx_i==1'b1)   // detected a pulse (start bit?)
+	`SR_IDLE :	if (srx_i==1'b0)   // detected a pulse (start bit?)
 			begin
 				rstate <= #1 `SR_REC_START;
 				rcounter16 <= #1 4'b1110;
@@ -179,7 +182,7 @@ begin
 				rstate <= #1 `SR_IDLE;
 	`SR_REC_START :	begin
 				if (rcounter16_eq_7)    // check the pulse
-					if (srx_i==1'b0)   // no start bit
+					if (srx_i==1'b1)   // no start bit
 						rstate <= #1 `SR_IDLE;
 					else            // start bit detected
 						rstate <= #1 `SR_REC_PREPARE;
@@ -263,7 +266,7 @@ begin
 	`SR_REC_STOP :	begin
 				if (rcounter16_eq_7)	// read the parity
 				begin
-					rframing_error <= #1 srx_i; // no framing error if input is 0 (stop bit)
+					rframing_error <= #1 !srx_i; // no framing error if input is 1 (stop bit)
 					rf_data_in <= #1 {rshift, rparity_error, rframing_error};
 					rstate <= #1 `SR_PUSH;
 				end

@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.4  2001/05/31 20:08:01  gorban
+// FIFO changes and other corrections.
+//
 // Revision 1.3  2001/05/27 17:37:49  gorban
 // Fixed many bugs. Updated spec. Changed FIFO files structure. See CHANGES.txt file.
 //
@@ -140,7 +143,7 @@ begin
   if (wb_rst_i)
   begin
 	state       <= #1 `S_IDLE;
-	stx_o       <= #1 1'b0;
+	stx_o       <= #1 1'b1;
 	counter16   <= #1 4'b0;
 	shift_out   <= #1 7'b0;
 	bit_out     <= #1 1'b0;
@@ -155,12 +158,12 @@ begin
 	`S_IDLE	 :	if (~|tf_count) // if tf_count==0
 			begin
 				state <= #1 `S_IDLE;
-				stx_o <= #1 1'b0;
+				stx_o <= #1 1'b1;
 			end
 			else
 			begin
 				tf_pop <= #1 1'b0;
-				stx_o  <= #1 1'b0;
+				stx_o  <= #1 1'b1;
 				state  <= #1 `S_POP_BYTE;
 			end
 	`S_POP_BYTE :	begin
@@ -198,7 +201,7 @@ begin
 				end
 				else
 					counter16 <= #1 counter16 - 4'b0001;
-				stx_o <= #1 1'b1;
+				stx_o <= #1 1'b0;
 			end
 	`S_SEND_BYTE :	begin
 				if (~|counter16)
@@ -257,7 +260,7 @@ begin
 				end
 				else
 					counter16 <= #1 counter16 - 4'b0001;
-				stx_o <= #1 1'b0;
+				stx_o <= #1 1'b1;
 			end
 
 		default : // should never get here
