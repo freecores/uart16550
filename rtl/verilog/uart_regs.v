@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.30  2001/12/13 10:09:13  mohor
+// thre irq should be cleared only when being source of interrupt.
+//
 // Revision 1.29  2001/12/12 09:05:46  mohor
 // LSR status bit 0 was not cleared correctly in case of reseting the FCR (rx fifo).
 //
@@ -369,7 +372,7 @@ assign lsr_mask = lsr_mask_condition && ~lsr_mask_d;
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
-		msi_reset <= #1 0;
+		msi_reset <= #1 1;
 	else
 	if (msi_reset)
 		msi_reset <= #1 0;
@@ -491,6 +494,8 @@ begin
 		msr[`UART_MS_CDCD:`UART_MS_CCTS] <= #1 {dcd, ri, dsr, cts};
 	end
 end
+
+
 
 // Line Status Register
 
