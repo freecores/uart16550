@@ -64,6 +64,11 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.14  2001/12/17 14:46:48  mohor
+// overrun signal was moved to separate block because many sequential lsr
+// reads were preventing data from being written to rx fifo.
+// underrun signal was not used and was removed from the project.
+//
 // Revision 1.13  2001/11/26 21:38:54  gorban
 // Lots of fixes:
 // Break condition wasn't handled correctly at all.
@@ -231,7 +236,7 @@ begin
 				fifo[top] <= #1 data_in;
 				count     <= #1 count + 1'b1;
 			end
-		2'b01 :
+		2'b01 : if(count>0)
 			begin
         fifo[bottom] <= #1 0;
 				bottom   <= #1 bottom + 1'b1;
