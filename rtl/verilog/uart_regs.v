@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.40  2003/06/11 16:37:47  gorban
+// This fixes errors in some cases when data is being read and put to the FIFO at the same time. Patch is submitted by Scott Furman. Update is very recommended.
+//
 // Revision 1.39  2002/07/29 21:16:18  gorban
 // The uart_defines.v file is included again in sources.
 //
@@ -286,6 +289,7 @@ assign baud_o = enable; // baud_o is actually the enable signal
 
 wire 										stx_pad_o;		// received from transmitter module
 wire 										srx_pad_i;
+wire 										srx_pad;
 
 reg [7:0] 								wb_dat_o;
 
@@ -371,8 +375,21 @@ wire serial_out;
 
 uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, serial_out, tstate, tf_count, tx_reset, lsr_mask);
 
+  // Synchronizing and sampling serial RX input
+  uart_sync_flops    i_uart_sync_flops
+  (
+    .rst_i           (wb_rst_i),
+    .clk_i           (clk),
+    .stage1_rst_i    (1'b0),
+    .stage1_clk_en_i (1'b1),
+    .async_dat_i     (srx_pad_i),
+    .sync_dat_o      (srx_pad)
+  );
+  defparam i_uart_sync_flops.width      = 1;
+  defparam i_uart_sync_flops.init_value = 1'b1;
+
 // handle loopback
-wire serial_in = loopback ? serial_out : srx_pad_i;
+wire serial_in = loopback ? serial_out : srx_pad;
 assign stx_pad_o = loopback ? 1'b1 : serial_out;
 
 // Receiver Instance
