@@ -63,6 +63,22 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.18  2002/07/22 23:02:23  gorban
+// Bug Fixes:
+//  * Possible loss of sync and bad reception of stop bit on slow baud rates fixed.
+//   Problem reported by Kenny.Tung.
+//  * Bad (or lack of ) loopback handling fixed. Reported by Cherry Withers.
+//
+// Improvements:
+//  * Made FIFO's as general inferrable memory where possible.
+//  So on FPGA they should be inferred as RAM (Distributed RAM on Xilinx).
+//  This saves about 1/3 of the Slice count and reduces P&R and synthesis times.
+//
+//  * Added optional baudrate output (baud_o).
+//  This is identical to BAUDOUT* signal on 16550 chip.
+//  It outputs 16xbit_clock_rate - the divided clock.
+//  It's disabled by default. Define UART_HAS_BAUDRATE_OUTPUT to use.
+//
 // Revision 1.16  2002/01/08 11:29:40  mohor
 // tf_pop was too wide. Now it is only 1 clk cycle width.
 //
@@ -133,7 +149,7 @@
 `include "timescale.v"
 // synopsys translate_on
 
-//`include "uart_defines.v"
+`include "uart_defines.v"
 
 module uart_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_pad_o, tstate, tf_count, tx_reset, lsr_mask);
 
