@@ -64,6 +64,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.16  2002/07/29 21:16:18  gorban
+// The uart_defines.v file is included again in sources.
+//
 // Revision 1.15  2002/07/22 23:02:23  gorban
 // Bug Fixes:
 //  * Possible loss of sync and bad reception of stop bit on slow baud rates fixed.
@@ -239,8 +242,6 @@ always  @(posedge clk or posedge wb_rst_i)
 		wb_sel_is <= #1 wb_sel_i;
 	end
 
-assign wb_adr_int = wb_adr_is;
-
 `ifdef DATA_BUS_WIDTH_8 // 8-bit data bus
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i)
@@ -250,6 +251,8 @@ always @(posedge clk or posedge wb_rst_i)
 
 always @(wb_dat_is)
 	wb_dat8_i = wb_dat_is;
+
+assign wb_adr_int = wb_adr_is;
 
 `else // 32-bit bus
 // put output to the correct byte in 32 bits using select line
@@ -266,7 +269,10 @@ always @(posedge clk or posedge wb_rst_i)
  			default: wb_dat_o <= #1 0;
 		endcase // case(wb_sel_i)
 
+reg [1:0] wb_adr_int_lsb;
+
 always @(wb_sel_is or wb_dat_is)
+begin
 	case (wb_sel_is)
 		4'b0001 : wb_dat8_i = wb_dat_is[7:0];
 		4'b0010 : wb_dat8_i = wb_dat_is[15:8];
@@ -274,6 +280,27 @@ always @(wb_sel_is or wb_dat_is)
 		4'b1000 : wb_dat8_i = wb_dat_is[31:24];
 		default : wb_dat8_i = wb_dat_is[7:0];
 	endcase // case(wb_sel_i)
+
+  `ifdef LITLE_ENDIAN
+	case (wb_sel_is)
+		4'b0001 : wb_adr_int_lsb = 2'h0;
+		4'b0010 : wb_adr_int_lsb = 2'h1;
+		4'b0100 : wb_adr_int_lsb = 2'h2;
+		4'b1000 : wb_adr_int_lsb = 2'h3;
+		default : wb_adr_int_lsb = 2'h0;
+	endcase // case(wb_sel_i)
+  `else
+	case (wb_sel_is)
+		4'b0001 : wb_adr_int_lsb = 2'h3;
+		4'b0010 : wb_adr_int_lsb = 2'h2;
+		4'b0100 : wb_adr_int_lsb = 2'h1;
+		4'b1000 : wb_adr_int_lsb = 2'h0;
+		default : wb_adr_int_lsb = 2'h0;
+	endcase // case(wb_sel_i)
+  `endif
+end
+
+assign wb_adr_int = {wb_adr_is[`UART_ADDR_WIDTH-1:2], wb_adr_int_lsb};
 
 `endif // !`ifdef DATA_BUS_WIDTH_8
 
