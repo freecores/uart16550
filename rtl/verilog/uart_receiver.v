@@ -63,6 +63,11 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.22  2001/12/17 14:46:48  mohor
+// overrun signal was moved to separate block because many sequential lsr
+// reads were preventing data from being written to rx fifo.
+// underrun signal was not used and was removed from the project.
+//
 // Revision 1.21  2001/12/13 10:31:16  mohor
 // timeout irq must be set regardless of the rda irq (rda irq does not reset the
 // timeout counter).
@@ -98,7 +103,7 @@
 // LSR bit 0 timing corrected.
 //
 // Revision 1.14  2001/11/10 12:43:21  gorban
-// Synthesis bugs fixed. Some other minor changes
+// Logic Synthesis bugs fixed. Some other minor changes
 //
 // Revision 1.13  2001/11/08 14:54:23  mohor
 // Comments in Slovene language deleted, few small fixes for better work of

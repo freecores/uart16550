@@ -62,6 +62,11 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.33  2001/12/17 10:14:43  mohor
+// Things related to msr register changed. After THRE IRQ occurs, and one
+// character is written to the transmit fifo, the detection of the THRE bit in the
+// LSR is delayed for one character time.
+//
 // Revision 1.32  2001/12/14 13:19:24  mohor
 // MSR register fixed.
 //
@@ -114,7 +119,7 @@
 // ti_int_d error fixed.
 //
 // Revision 1.19  2001/11/10 12:43:21  gorban
-// Synthesis bugs fixed. Some other minor changes
+// Logic Synthesis bugs fixed. Some other minor changes
 //
 // Revision 1.18  2001/11/08 14:54:23  mohor
 // Comments in Slovene language deleted, few small fixes for better work of
