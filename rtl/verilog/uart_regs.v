@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.35  2001/12/19 08:03:34  mohor
+// Warnings cleared.
+//
 // Revision 1.34  2001/12/19 07:33:54  mohor
 // Synplicity was having troubles with the comment.
 //
@@ -331,7 +334,7 @@ uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_
 
 // Receiver Instance
 uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, 
-	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate, rf_push);
+	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate, rf_push_pulse);
 
 
 // Asynchronous reading here because the outputs are sampled in uart_wb.v file 
@@ -524,7 +527,7 @@ end
 // Line Status Register
 
 // activation conditions
-assign lsr0 = (rf_count==0 && rf_push);  // data in receiver fifo available set condition
+assign lsr0 = (rf_count==0 && rf_push_pulse);  // data in receiver fifo available set condition
 assign lsr1 = rf_overrun;     // Receiver overrun error
 assign lsr2 = rf_data_out[1]; // parity error bit
 assign lsr3 = rf_data_out[0]; // framing error bit

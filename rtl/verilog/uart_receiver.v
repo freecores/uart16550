@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.24  2001/12/19 08:03:34  mohor
+// Warnings cleared.
+//
 // Revision 1.23  2001/12/19 07:33:54  mohor
 // Synplicity was having troubles with the comment.
 //
@@ -164,7 +167,7 @@
 `include "uart_defines.v"
 
 module uart_receiver (clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, 
-	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate, rf_push);
+	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate, rf_push_pulse);
 
 input				clk;
 input				wb_rst_i;
@@ -181,7 +184,7 @@ output	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_out;
 output				rf_overrun;
 output				rf_error_bit;
 output [3:0] 		rstate;
-output 				rf_push;
+output 				rf_push_pulse;
 
 reg	[3:0]	rstate;
 reg	[3:0]	rcounter16;
@@ -197,6 +200,7 @@ reg	[7:0]	counter_b;	// counts the 0 (low) signals
 // RX FIFO signals
 reg	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_in;
 wire	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_out;
+wire      rf_push_pulse;
 reg				rf_push;
 wire				rf_pop;
 wire				rf_overrun;
@@ -210,7 +214,7 @@ uart_fifo #(`UART_FIFO_REC_WIDTH) fifo_rx(
 	.wb_rst_i(	wb_rst_i	),
 	.data_in(	rf_data_in	),
 	.data_out(	rf_data_out	),
-	.push(		rf_push		),
+	.push(		rf_push_pulse		),
 	.pop(		rf_pop		),
 	.overrun(	rf_overrun	),
 	.count(		rf_count	),
@@ -392,6 +396,17 @@ begin
   end  // if (enable)
 end // always of receiver
 
+always @ (posedge clk or posedge wb_rst_i)
+begin
+  if(wb_rst_i)
+    rf_push_q <= 0;
+  else
+    rf_push_q <= #1 rf_push;
+end
+
+assign rf_push_pulse = rf_push & ~rf_push_q;
+
+  
 //
 // Break condition detection.
 // Works in conjuction with the receiver state machine
@@ -438,7 +453,7 @@ begin
 	if (wb_rst_i)
 		counter_t <= #1 10'd639; // 10 bits for the default 8N1
 	else
-		if(rf_push || rf_pop || rf_count == 0) // counter is reset when RX FIFO is empty, accessed or above trigger level
+		if(rf_push_pulse || rf_pop || rf_count == 0) // counter is reset when RX FIFO is empty, accessed or above trigger level
 			counter_t <= #1 toc_value;
 		else
 		if (enable && counter_t != 10'b0)  // we don't want to underflow

@@ -64,6 +64,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.15  2001/12/18 09:01:07  mohor
+// Bug that was entered in the last update fixed (rx state machine).
+//
 // Revision 1.14  2001/12/17 14:46:48  mohor
 // overrun signal was moved to separate block because many sequential lsr
 // reads were preventing data from being written to rx fifo.
@@ -168,34 +171,7 @@ reg	[fifo_pointer_w-1:0]	bottom;
 reg	[fifo_counter_w-1:0]	count;
 reg				overrun;
 
-// These registers and signals are to detect rise of of the signals.
-// Not that it slows the maximum rate by 2, meaning you must reset the signals and then
-// assert them again for the operation to repeat
-// This is done to accomodate wait states
-reg				push_delay; 
-reg				pop_delay;
-
-wire				push_rise = push_delay & push;
-wire				pop_rise  = pop_delay  & pop;
-
 wire [fifo_pointer_w-1:0] top_plus_1 = top + 1'b1;
-
-always @(posedge clk or posedge wb_rst_i)
-begin
-	if (wb_rst_i)
-		push_delay <= #1 1'b0;
-	else
-		push_delay <= #1 ~push;
-end
-
-always @(posedge clk or posedge wb_rst_i)
-begin
-	if (wb_rst_i)
-		pop_delay <= #1 1'b0;
-	else
-		pop_delay <= #1 ~pop;
-end
-
 
 always @(posedge clk or posedge wb_rst_i) // synchronous FIFO
 begin
@@ -229,7 +205,7 @@ begin
 	end
   else
 	begin
-		case ({push_rise, pop_rise})
+		case ({push, pop})
 		2'b10 : if (count<fifo_depth)  // overrun condition
 			begin
 				top       <= #1 top_plus_1;
@@ -261,7 +237,7 @@ begin
   if(fifo_reset | reset_status) 
     overrun   <= #1 1'b0;
   else
-  if(push_rise & (count==fifo_depth))
+  if(push & (count==fifo_depth))
     overrun   <= #1 1'b1;
 end   // always
 
