@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.16  2002/01/08 11:29:40  mohor
+// tf_pop was too wide. Now it is only 1 clk cycle width.
+//
 // Revision 1.15  2001/12/17 14:46:48  mohor
 // overrun signal was moved to separate block because many sequential lsr
 // reads were preventing data from being written to rx fifo.
@@ -161,7 +164,7 @@ reg 											bit_out;
 wire [`UART_FIFO_WIDTH-1:0] 			tf_data_in;
 wire [`UART_FIFO_WIDTH-1:0] 			tf_data_out;
 wire 											tf_push;
-wire 											tf_overrun;
+//wire 											tf_overrun;
 wire [`UART_FIFO_COUNTER_W-1:0] 		tf_count;
 
 assign 										tf_data_in = wb_dat_i;
@@ -173,7 +176,7 @@ uart_fifo fifo_tx(	// error bit signal is not used in transmitter FIFO
 	.data_out(	tf_data_out	),
 	.push(		tf_push		),
 	.pop(		tf_pop		),
-	.overrun(	tf_overrun	),
+	.overrun(	/*tf_overrun*/	),
 	.count(		tf_count	),
 	.error_bit(),                 // Ta ni priklopljen. Prej je manjkal, dodal Igor
 	.fifo_reset(	tx_reset	),
