@@ -63,6 +63,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.19  2001/12/06 14:51:04  gorban
+// Bug in LSR[0] is fixed.
+// All WISHBONE signals are now sampled, so another wait-state is introduced on all transfers.
+//
 // Revision 1.18  2001/12/03 21:44:29  gorban
 // Updated specification documentation.
 // Added full 32-bit data bus interface, now as default.
@@ -222,6 +226,7 @@ parameter  sr_wait1 					= 4'd9;
 parameter  sr_push 					= 4'd10;
 parameter  sr_last 					= 4'd11;
 
+
 always @(posedge clk or posedge wb_rst_i)
 begin
   if (wb_rst_i)
@@ -239,13 +244,13 @@ begin
 	  rf_data_in 			<= #1 0;
   end
   else
-	  if (break_error && rstate != sr_idle) // break condition met while receiver is not idle
-	  begin
-		  rstate 		 <= #1 sr_idle;
-		  rf_data_in 	 <= #1 {8'b0, 3'b100}; // break input (empty character) to receiver FIFO
-		  rf_push 		 <= #1 1'b1;
-	  end
-  else
+//	  if (break_error && rstate != sr_idle) // break condition met while receiver is not idle
+//	  begin
+//		  rstate 		 <= #1 sr_idle;
+//		  rf_data_in 	 <= #1 {8'b0, 3'b100}; // break input (empty character) to receiver FIFO
+//		  rf_push 		 <= #1 1'b1;
+//	  end
+//  else
   if (enable)
   begin
 	case (rstate)
@@ -352,12 +357,20 @@ begin
 	sr_push :	begin
 ///////////////////////////////////////
 //				$display($time, ": received: %b", rf_data_in);
-  			rf_data_in <= #1 {rshift, 1'b0, rparity_error, rframing_error};
-				rf_push    <= #1 1'b1;
-				rstate     <= #1 sr_last;
+        if(srx_pad_i | break_error)
+          begin
+            if(break_error)
+        		  rf_data_in 	<= #1 {8'b0, 3'b100}; // break input (empty character) to receiver FIFO
+            else
+        			rf_data_in  <= #1 {rshift, 1'b0, rparity_error, rframing_error};
+      		  rf_push 		  <= #1 1'b1;
+    				rstate        <= #1 sr_last;
+          end
+            
 			end
 	sr_last :	begin
-				if (rcounter16_eq_1)
+//				if (rcounter16_eq_1)
+				if (rcounter16_eq_1 & srx_pad_i)    // igor
 					rstate <= #1 sr_idle;
 				rcounter16 <= #1 rcounter16_minus_1;
 				rf_push    <= #1 1'b0;
@@ -393,9 +406,9 @@ begin
 	if (wb_rst_i)
 		counter_b <= #1 8'd159;
 	else
-  if(lsr_mask)
-		counter_b <= #1 brc_value;
-  else
+//  if(lsr_mask)                          igor
+//		counter_b <= #1 brc_value;
+//  else
 	if (enable)  // only work on enable times
 		if (srx_pad_i)
 			counter_b <= #1 brc_value; // character time length - 1
