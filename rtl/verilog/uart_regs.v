@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.39  2002/07/29 21:16:18  gorban
+// The uart_defines.v file is included again in sources.
+//
 // Revision 1.38  2002/07/22 23:02:23  gorban
 // Bug Fixes:
 //  * Possible loss of sync and bad reception of stop bit on slow baud rates fixed.
@@ -585,7 +588,7 @@ always @(posedge clk or posedge wb_rst_i)
 
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i) lsr0r <= #1 0;
-	else lsr0r <= #1 (rf_count==1 && fifo_read || rx_reset) ? 0 : // deassert condition
+	else lsr0r <= #1 (rf_count==1 && rf_pop && !rf_push_pulse || rx_reset) ? 0 : // deassert condition
 					  lsr0r || (lsr0 && ~lsr0_d); // set on rise of lsr0 and keep asserted until deasserted 
 
 // lsr bit 1 (receiver overrun)

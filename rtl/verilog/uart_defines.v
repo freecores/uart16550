@@ -63,6 +63,22 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.12  2002/07/22 23:02:23  gorban
+// Bug Fixes:
+//  * Possible loss of sync and bad reception of stop bit on slow baud rates fixed.
+//   Problem reported by Kenny.Tung.
+//  * Bad (or lack of ) loopback handling fixed. Reported by Cherry Withers.
+//
+// Improvements:
+//  * Made FIFO's as general inferrable memory where possible.
+//  So on FPGA they should be inferred as RAM (Distributed RAM on Xilinx).
+//  This saves about 1/3 of the Slice count and reduces P&R and synthesis times.
+//
+//  * Added optional baudrate output (baud_o).
+//  This is identical to BAUDOUT* signal on 16550 chip.
+//  It outputs 16xbit_clock_rate - the divided clock.
+//  It's disabled by default. Define UART_HAS_BAUDRATE_OUTPUT to use.
+//
 // Revision 1.10  2001/12/11 08:55:40  mohor
 // Scratch register define added.
 //
@@ -112,7 +128,7 @@
 // remove comments to restore use to the old version with 8 data bit interface
 // in new mode (32bit bus), the wb_sel_i signal is used to pus data in correct place
 // also, in 8-bit version there'll be no debugging features included
-//`define DATA_BUS_WIDTH_8
+`define DATA_BUS_WIDTH_8
 
 `ifdef DATA_BUS_WIDTH_8
  `define UART_ADDR_WIDTH 3

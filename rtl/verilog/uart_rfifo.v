@@ -60,6 +60,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.2  2002/07/29 21:16:18  gorban
+// The uart_defines.v file is included again in sources.
+//
 // Revision 1.1  2002/07/22 23:02:23  gorban
 // Bug Fixes:
 //  * Possible loss of sync and bad reception of stop bit on slow baud rates fixed.
@@ -227,7 +230,6 @@ begin
 				count	 <= #1 count - 1'b1;
 			end
 		2'b11 : begin
-        fifo[bottom] <= #1 0;
 				bottom   <= #1 bottom + 1'b1;
 				top       <= #1 top_plus_1;
 				fifo[top] <= #1 data_in[2:0];
@@ -245,7 +247,7 @@ begin
   if(fifo_reset | reset_status) 
     overrun   <= #1 1'b0;
   else
-  if(push & (count==fifo_depth))
+  if(push & ~pop & (count==fifo_depth))
     overrun   <= #1 1'b1;
 end   // always
 
