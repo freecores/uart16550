@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.2  2001/05/17 18:34:18  gorban
+// First 'stable' release. Should be sythesizable now. Also added new header.
+//
 // Revision 1.0  2001-05-17 21:27:12+02  jacob
 // Initial revision
 //
@@ -252,16 +255,11 @@ begin
 	cycle(1, 0, 8'b01000101);
 	#100;
 	wait (uart_snd.regs.state==0 && uart_snd.regs.transmitter.tf_count==0);
-	#100;
-	$finish;
-	
 end
 
 // receiver side
 initial
 begin
-	//$monitor($time, " State: ", uart_rcv.regs.receiver.rstate);
-	$monitor($time, " stx_i: ", uart_snd.regs.transmitter.fifo_tx.fifo[1], uart_snd.regs.transmitter.fifo_tx.top);
 	#11;
 	wb1_stb_ir = 0;
 	wb1_cyc_ir = 0;
@@ -276,6 +274,13 @@ begin
 	@(posedge clk);
 	// restore normal registers
 	cycle1(1, `REG_LC, 8'b00011011);
+	wait(uart_rcv.regs.receiver.rf_count == 2);
+	cycle1(0, 0, 0);
+	$display("Data out: %b", wb1_dat_o);
+	@(posedge clk);
+	cycle1(0, 0, 0);
+	$display("Data out: %b ", wb1_dat_o);
+
 end
 
 //always @(uart_rcv.regs.rstate)

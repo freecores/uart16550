@@ -28,8 +28,7 @@
 ////      - Jacob Gorban                                          ////
 ////                                                              ////
 ////  Created:        2001/05/12                                  ////
-////  Last Updated:   2001/05/17                                  ////
-////                  (See log for the revision history           ////
+////  Last Updated:   (See log for the revision history           ////
 ////                                                              ////
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
@@ -62,6 +61,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.8  2001/05/29 20:05:04  gorban
+// Fixed some bugs and synthesis problems.
+//
 // Revision 1.7  2001/05/27 17:37:49  gorban
 // Fixed many bugs. Updated spec. Changed FIFO files structure. See CHANGES.txt file.
 //
@@ -77,7 +79,7 @@
 //
 
 `include "timescale.v"
-`include "UART_defines.v"
+//`include "UART_defines.v"
 
 `define DL1 7:0
 `define DL2 15:8
@@ -87,8 +89,6 @@
 module UART_regs (clk,
 	wb_rst_i, wb_addr_i, wb_dat_i, wb_dat_o, wb_we_i,
 
-// registers
-	ier, iir, fcr, mcr, lcr, lsr, msr, dl,
 // additional signals
 	modem_inputs,
 	stx_o, srx_i,
@@ -103,14 +103,6 @@ input	[7:0]	wb_dat_i;
 output	[7:0]	wb_dat_o;
 input		wb_we_i;
 
-output	[3:0]	ier;
-output	[3:0]	iir;
-output	[3:0]	fcr;  /// bits 7,6,2,1 of fcr. Other bits are ignored
-output	[4:0]	mcr;
-output	[7:0]	lcr;
-output	[7:0]	lsr;
-output	[7:0]	msr;
-output	[31:0]	dl;  // 32-bit divisor latch
 output		stx_o;
 input		srx_i;
 
@@ -133,7 +125,7 @@ wire	[7:0]	wb_dat_i;
 
 reg	[3:0]	ier;
 reg	[3:0]	iir;
-reg	[3:0]	fcr;  /// bits 7,6,2,1 of fcr. Other bits are ignored
+reg	[1:0]	fcr;  /// bits 7 and 6 of fcr. Other bits are ignored
 reg	[4:0]	mcr;
 reg	[7:0]	lcr;
 reg	[7:0]	lsr;
@@ -147,6 +139,8 @@ reg	[31:0]	dlc;  // 32-bit divisor latch counter
 reg		int_o;
 
 reg	[3:0]	trigger_level; // trigger level of the receiver FIFO
+reg		rx_reset;
+reg		tx_reset;
 
 wire		dlab;			   // divisor latch access bit
 wire		cts_i, dsr_i, ri_i, dcd_i; // modem status bits
@@ -207,19 +201,13 @@ begin
 		  else
 			wb_dat_o <= #1 rf_data_out[9:2];
 	`REG_IE	: wb_dat_o <= #1 dlab ? dl[`DL2] : ier;
-	`REG_II	: begin
-			wb_dat_o <= #1 {4'b1100,iir};
-			threi_clear <= #1 1;
-		  end
+	`REG_II	: wb_dat_o <= #1 {4'b1100,iir};
 	`REG_LC	: wb_dat_o <= #1 lcr;
 	`REG_LS	: if (dlab)
 			wb_dat_o <= #1 dl[`DL4];
 		  else
 			wb_dat_o <= #1 lsr;
-	`REG_MS	: begin
-			wb_dat_o <= #1 msr;
-			msi_reset <= #1 1; // clear the modem status interrupt
-		  end
+	`REG_MS	: wb_dat_o <= #1 msr;
 	`REG_DL3: wb_dat_o <= #1 dlab ? dl[`DL3] : 8'b0;
 
 	default:  wb_dat_o <= #1 8'b0; // ??
@@ -308,19 +296,27 @@ always @(posedge clk or posedge wb_rst_i)
 			ier <= #1 wb_dat_i[3:0]; // ier uses only 4 lsb
 
 
-// FIFO Control Register
+// FIFO Control Register and rx_reset, tx_reset signals
 always @(posedge clk or posedge wb_rst_i)
-	if (wb_rst_i)
-		fcr <= #1 4'b1100; // no interrupts after reset
-	else
-	if (wb_we_i && wb_addr_i==`REG_FC)
-		fcr <= #1 {wb_dat_i[7:6],wb_dat_i[2:1]};
+	if (wb_rst_i) begin
+		fcr <= #1 2'b11; 
+		rx_reset <= #1 0;
+		tx_reset <= #1 0;
+	end else
+	if (wb_we_i && wb_addr_i==`REG_FC) begin
+		fcr <= #1 wb_dat_i[7:6];
+		rx_reset <= #1 wb_dat_i[1];
+		tx_reset <= #1 wb_dat_i[2];
+	end else begin // clear rx_reset, tx_reset signals when not written to
+		rx_reset <= #1 0;
+		tx_reset <= #1 0;
+	end
 
 // Modem Control Register or DL3
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i)
 	begin
-		mcr <= #1 5'b0; // no interrupts after reset
+		mcr <= #1 5'b0; 
 		dl[`DL3] <= #1 8'b0;
 	end
 	else

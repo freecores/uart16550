@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.3  2001/05/21 19:12:02  gorban
+// Corrected some Linter messages.
+//
 // Revision 1.2  2001/05/17 18:34:18  gorban
 // First 'stable' release. Should be sythesizable now. Also added new header.
 //
@@ -124,17 +127,6 @@ wire	[7:0]	wb_dat_o;
 
 wire		we_o;	// Write enable for registers
 
-wire	[3:0]	ier;
-wire	[3:0]	iir;
-wire	[3:0]	fcr;  /// bits 7,6,2,1 of fcr. Other bits are ignored
-wire	[4:0]	mcr;
-wire	[7:0]	lcr;
-wire	[7:0]	lsr;	
-wire	[7:0]	msr;
-wire	[31:0]	dl;  // 32-bit divisor latch
-
-wire		enable;
-
 //
 // MODULE INSTANCES
 //
@@ -143,14 +135,10 @@ wire		enable;
 UART_wb		wb_interface(
 		.clk(		clk		),
 		.wb_rst_i(	wb_rst_i	),
-		.wb_addr_i(	wb_addr_i	),
-//		.wb_dat_i(	wb_dat_i	),
-//		.wb_dat_o(	wb_dat_o	),
 		.wb_we_i(	wb_we_i		),
 		.wb_stb_i(	wb_stb_i	),
 		.wb_cyc_i(	wb_cyc_i	),
 		.wb_ack_o(	wb_ack_o	),
-//		.int_o(		int_o		),
 		.we_o(		we_o		)
 		);
 
@@ -162,14 +150,6 @@ UART_regs	regs(
 		.wb_dat_i(	wb_dat_i	),
 		.wb_dat_o(	wb_dat_o	),
 		.wb_we_i(	we_o		),
-		.ier(		ier		),
-		.iir(		iir		),
-		.fcr(		fcr		),
-		.mcr(		mcr		),
-		.lcr(		lcr		),
-		.lsr(		lsr		),
-		.msr(		msr		),
-		.dl(		dl		),
 		.modem_inputs(	{cts_i, dsr_i,
 				 ri_i,  dcd_i}	),
 		.stx_o(		stx_o		),

@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.3  2001/05/27 17:37:49  gorban
+// Fixed many bugs. Updated spec. Changed FIFO files structure. See CHANGES.txt file.
+//
 // Revision 1.2  2001/05/21 19:12:02  gorban
 // Corrected some Linter messages.
 //
@@ -74,7 +77,7 @@
 //
 
 `include "timescale.v"
-`include "UART_defines.v"
+//`include "UART_defines.v"
 
 module UART_receiver (clk, wb_rst_i, lcr, rf_pop, srx_i, enable, rda_int,
 	counter_t, counter_b, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset);
@@ -116,12 +119,19 @@ wire	[`FIFO_COUNTER_W-1:0]	rf_count;
 wire				rf_error_bit; // an error (parity or framing) is inside the fifo
 
 // RX FIFO instance
-UART_RX_FIFO fifo_rx(clk, wb_rst_i, rf_data_in, rf_data_out,
-	rf_push, rf_pop, rf_underrun, rf_overrun, rf_count, rf_error_bit, rx_reset);
-
-// Receiver FIFO parameters redefine
-defparam fifo_rx.fifo_width = `FIFO_REC_WIDTH;
-
+UART_FIFO #(`FIFO_REC_WIDTH) fifo_rx(
+	.clk(		clk		), 
+	.wb_rst_i(	wb_rst_i	),
+	.data_in(	rf_data_in	),
+	.data_out(	rf_data_out	),
+	.push(		rf_push		),
+	.pop(		rf_pop		),
+	.underrun(	rf_underrun	),
+	.overrun(	rf_overrun	),
+	.count(		rf_count	),
+	.error_bit(	rf_error_bit	),
+	.fifo_reset(	rx_reset	)
+);
 
 wire		rcounter16_eq_7 = (rcounter16 == 4'd7);
 wire		rcounter16_eq_0 = (rcounter16 == 4'd0);

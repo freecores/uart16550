@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.3  2001/05/27 17:37:49  gorban
+// Fixed many bugs. Updated spec. Changed FIFO files structure. See CHANGES.txt file.
+//
 // Revision 1.2  2001/05/21 19:12:02  gorban
 // Corrected some Linter messages.
 //
@@ -74,7 +77,7 @@
 //
 
 `include "timescale.v"
-`include "UART_defines.v"
+//`include "UART_defines.v"
 
 module UART_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_o, state, tf_count, tx_reset);
 
@@ -110,8 +113,18 @@ wire	[`FIFO_COUNTER_W-1:0]	tf_count;
 
 assign tf_data_in = wb_dat_i;
 
-UART_TX_FIFO fifo_tx(clk, wb_rst_i, tf_data_in, tf_data_out,
-	tf_push, tf_pop, tf_underrun, tf_overrun, tf_count, tx_reset);
+UART_FIFO fifo_tx(	// error bit signal is not used in transmitter FIFO
+	.clk(		clk		), 
+	.wb_rst_i(	wb_rst_i	),
+	.data_in(	tf_data_in	),
+	.data_out(	tf_data_out	),
+	.push(		tf_push		),
+	.pop(		tf_pop		),
+	.underrun(	tf_underrun	),
+	.overrun(	tf_overrun	),
+	.count(		tf_count	),
+	.fifo_reset(	tx_reset	)
+);
 
 // TRANSMITTER FINAL STATE MACHINE
 

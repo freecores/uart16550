@@ -1,6 +1,31 @@
 Note: This Changes file is being maintained since 25.5.2001.
 
-27.05.2001 (release 1.7)
+31.05.2001
+~~~~~~~~~~
+
+* Minor changes in register reading code
+* Changed FCR to be 2 bits wide (reset bits are not needed) and instead enabled the rx_reset and tx_reset
+   signals which I forgot to implement.
+* Changed defines for FCR.
+* Cleaned ports that were not connected in top-level.
+* Changed the code to have only one FIFO module instead of two to overcome versioning problem on the cost of
+   some additional gate count. UART_RX_FIFO was modified a little and renamed to UART_FIFO.
+* UART_RX_FIFO.v and UART_TX_FIFO.v files removed from the project.
+* Changes to receiver and transmitter modules concerning FIFO handling.
+* Commented out `include "UART_defines" in all files but UART_top.v and test bench.
+* Modified test bench a little for a little better check.
+
+
+29.05.2001
+~~~~~~~~~~
+
+* Fixed: Line Control Register block didn't have wb_rst_i in its sensitivity list
+* Fixed: Modem Status Register block didn't have wb_rst_i in its sensitivity list and didn't set reset value
+* Fixed rf_pop, lsr_mask, msi_reset and threi_clear not being synthesizable in release 1.7. (Thanks 
+	to Pavel Korenski for pointing this to me)
+
+
+27.05.2001
 ~~~~~~~~~~
 
 Thanks to Rick Wright for pointing me many of my bugs.
@@ -18,12 +43,4 @@ Thanks to Rick Wright for pointing me many of my bugs.
 * Removed FIFO_inc.v from CVS tree.
 
 * Updated specifications .pdf file
-
-29.05.2001 (release 1.8)
-~~~~~~~~~~
-
-* Fixed: Line Control Register block didn't have wb_rst_i in its sensitivity list
-* Fixed: Modem Status Register block didn't have wb_rst_i in its sensitivity list and didn't set reset value
-* Fixed rf_pop, lsr_mask, msi_reset and threi_clear not being synthesizable in release 1.7. (Thanks 
-	to Pavel Korenski for pointing this to me)
 

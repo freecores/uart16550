@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.3  2001/05/21 19:12:01  gorban
+// Corrected some Linter messages.
+//
 // Revision 1.2  2001/05/17 18:34:18  gorban
 // First 'stable' release. Should be sythesizable now. Also added new header.
 //
@@ -76,15 +79,12 @@
 // Author: Jacob Gorban   (jacob.gorban@flextronicssemi.com)
 // Company: Flextronics Semiconductor
 //
-// Releases:
-//              1.1     First release
-//
 
 `include "timescale.v"
 
 module UART_wb (clk,
         wb_rst_i, 
-	wb_we_i, wb_stb_i, wb_cyc_i, wb_ack_o, wb_addr_i,
+	wb_we_i, wb_stb_i, wb_cyc_i, wb_ack_o,
 	we_o // Write enable output for the core
 	
         );
@@ -93,23 +93,15 @@ input				clk;
 
 // WISHBONE interface	
 input				wb_rst_i;
-input   [`ADDR_WIDTH-1:0]	wb_addr_i;
-//input   [7:0]			wb_dat_i;
-//output  [7:0]			wb_dat_o;
 input				wb_we_i;
 input				wb_stb_i;
 input				wb_cyc_i;
 output				wb_ack_o;
-//output				int_o;
 output				we_o;
-//output	[`ADDR_WIDTH-1:0]	addr_i;
-//output	[7:0]			dat_i;
 
 wire				we_o;
 reg				wb_ack_o;
-//reg	[7:0]			wb_dat_i;
-//reg	[7:0]			wb_dat_o;
-//reg	[`ADDR_WIDTH-1:0]	wb_addr_i;
+
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)

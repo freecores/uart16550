@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.4  2001/05/21 19:12:02  gorban
+// Corrected some Linter messages.
+//
 // Revision 1.3  2001/05/17 18:34:18  gorban
 // First 'stable' release. Should be sythesizable now. Also added new header.
 //
@@ -105,9 +108,7 @@
 `define II_MS	3'b000	// Modem Status
 
 // FIFO Control Register bits
-`define FC_CR	0	// Clear receiver
-`define FC_CT	1	// Clear transmitter
-`define FC_TL	3:2	// Trigger level
+`define FC_TL	1:0	// Trigger level
 
 // FIFO trigger level values
 `define FC_1	2'b00
