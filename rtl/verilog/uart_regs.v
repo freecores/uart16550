@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.32  2001/12/14 13:19:24  mohor
+// MSR register fixed.
+//
 // Revision 1.31  2001/12/14 10:06:58  mohor
 // After reset modem status register MSR should be reset.
 //
@@ -264,7 +267,7 @@ reg 										tx_reset;
 wire 										dlab;			   // divisor latch access bit
 wire 										cts_pad_i, dsr_pad_i, ri_pad_i, dcd_pad_i; // modem status bits
 wire 										loopback;		   // loopback bit (MCR bit 4)
-wire 										cts, dsr, ri, dcd;	   // effective signals (considering loopback)
+wire 										cts, dsr, ri, dcd;	   // effective signals
 wire                    cts_c, dsr_c, ri_c, dcd_c; // Complement effective signals (considering loopback)
 wire 										rts_pad_o, dtr_pad_o;		   // modem control outputs
 
@@ -281,11 +284,10 @@ wire 										lsr_mask; // lsr_mask
 assign 									lsr[7:0] = { lsr7r, lsr6r, lsr5r, lsr4r, lsr3r, lsr2r, lsr1r, lsr0r };
 
 assign 									{cts_pad_i, dsr_pad_i, ri_pad_i, dcd_pad_i} = modem_inputs;
-assign 									{cts, dsr, ri, dcd} = loopback ? {mcr[`UART_MC_DTR],mcr[`UART_MC_RTS],mcr[`UART_MC_OUT1],mcr[`UART_MC_OUT2]}
-											: ~{cts_pad_i,dsr_pad_i,ri_pad_i,dcd_pad_i};
+assign 									{cts, dsr, ri, dcd} = ~{cts_pad_i,dsr_pad_i,ri_pad_i,dcd_pad_i};
 
 assign                  {cts_c, dsr_c, ri_c, dcd_c} = loopback ? {mcr[`UART_MC_RTS],mcr[`UART_MC_DTR],mcr[`UART_MC_OUT1],mcr[`UART_MC_OUT2]}
-                      :  {cts_pad_i,dsr_pad_i,ri_pad_i,dcd_pad_i};
+                                                               : {cts_pad_i,dsr_pad_i,ri_pad_i,dcd_pad_i};
 
 assign 									dlab = lcr[`UART_LC_DL];
 assign 									loopback = mcr[4];
@@ -312,6 +314,9 @@ wire [2:0] 								tstate;
 wire [3:0] 								rstate;
 wire [9:0] 								counter_t;
 
+wire                      thre_set_en; // THRE status is delayed one character time when a character is written to fifo.
+reg  [7:0]                block_cnt;   // While counter counts, THRE status is blocked (delayed one character cycle)
+reg  [7:0]                block_value; // One character length minus stop bit
 
 // Transmitter Instance
 uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_pad_o, tstate, tf_count, tx_reset, lsr_mask);
@@ -505,7 +510,6 @@ begin
 end
 
 
-
 // Line Status Register
 
 // activation conditions
@@ -514,8 +518,8 @@ assign lsr1 = rf_overrun;     // Receiver overrun error
 assign lsr2 = rf_data_out[1]; // parity error bit
 assign lsr3 = rf_data_out[0]; // framing error bit
 assign lsr4 = rf_data_out[2]; // break error in the character
-assign lsr5 = (tf_count==5'b0);  // transmitter fifo is empty
-assign lsr6 = (tf_count==5'b0 && (tstate == /*`S_IDLE */ 0)); // transmitter empty
+assign lsr5 = (tf_count==5'b0 && thre_set_en);  // transmitter fifo is empty
+assign lsr6 = (tf_count==5'b0 && thre_set_en && (tstate == /*`S_IDLE */ 0)); // transmitter empty
 assign lsr7 = rf_error_bit;
 
 // lsr bit0 (receiver data available)
@@ -630,6 +634,36 @@ begin
 		else
 			enable <= #1 1'b0;
 end
+
+// Delaying THRE status for one character cycle after a character is written to an empty fifo.
+always @(lcr)
+  case (lcr[3:0])
+    4'b0000                             : block_value =  95; // 6 bits
+    4'b0100                             : block_value = 103; // 6.5 bits
+    4'b0001, 4'b1000                    : block_value = 111; // 7 bits
+    4'b1100                             : block_value = 119; // 7.5 bits
+    4'b0010, 4'b0101, 4'b1001           : block_value = 127; // 8 bits
+    4'b0011, 4'b0110, 4'b1010, 4'b1101  : block_value = 143; // 9 bits
+    4'b0111, 4'b1011, 4'b1110           : block_value = 159; // 10 bits
+    4'b1111                             : block_value = 175; // 11 bits
+  endcase // case(lcr[3:0])
+
+// Counting time of one character minus stop bit
+always @(posedge clk or posedge wb_rst_i)
+begin
+  if (wb_rst_i)
+    block_cnt <= #1 8'd0;
+  else
+  if(lsr5r & fifo_write)  // THRE bit set & write to fifo occured
+    block_cnt <= #1 block_value;
+  else
+  if (enable & block_cnt != 8'b0)  // only work on enable times
+    block_cnt <= #1 block_cnt - 1;  // decrement break counter
+end // always of break condition detection
+
+// Generating THRE status enable signal
+assign thre_set_en = ~(|block_cnt);
+
 
 //
 //	INTERRUPT LOGIC
