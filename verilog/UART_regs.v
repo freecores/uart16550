@@ -321,7 +321,7 @@ begin
 	end
 	else
 	begin
-		rls_int  <= #1 lsr[`LS_OE] | lsr[`LS_PE] | lsr[`LS_FE] | lsr[`LS_BE];
+		rls_int  <= #1 lsr[`LS_OE] || lsr[`LS_PE] || lsr[`LS_FE] || lsr[`LS_BI];
 		rda_int  <= #1 (rf_count >= trigger_level);
 		thre_int <= #1 lsr[`LS_TFE];
 		ms_int   <= #1 | msr[7:4]; // modem interrupt is pending when one of the modem inputs is asserted
@@ -331,11 +331,45 @@ end
 
 always @(posedge clk or posedge wb_rst_i)
 begin
+	if (wb_rst_i)
+		iir <= #1 8'b11000000;
+	else
 	if (rls_int && ier[`IE_RLS])  // interrupt occured and is enabled  (not masked)
 	begin
 		iir[`II_II] <= #1 `II_RLS;	// set identification register to correct value
-		iir				// and set the IIR bit 0 (interrupt pending)
+		iir[`II_IP] <= #1 1;		// and set the IIR bit 0 (interrupt pending)
 	end
+	else
+	if (rda_int && ier[`IE_RDA])
+	begin
+		iir[`II_II] <= #1 `II_RDA;
+		iir[`II_IP] <= #1 1;
+	end
+	else
+	if (ti_int)  // this interupt is not maskable
+	begin
+		iir[`II_II] <= #1 `II_TI;
+		iir[`II_IP] <= #1 1;
+	end
+	else
+	if (thre_int && ier[`IE_THRE])
+	begin
+		iir[`II_II] <= #1 `II_THRE;
+		iir[`II_IP] <= #1 1;
+	end
+	else
+	if (ms_int && ier[`IE_MS])
+	begin
+		iir[`II_II] <= #1 `II_MS;
+		iir[`II_IP] <= #1 1;
+	end
+	else	// no interrupt is pending
+	begin
+		iir[`II_IP] <= #1 0;
+	end
+
+
+
 end
 
 
