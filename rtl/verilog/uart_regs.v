@@ -62,6 +62,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.27  2001/12/06 14:51:04  gorban
+// Bug in LSR[0] is fixed.
+// All WISHBONE signals are now sampled, so another wait-state is introduced on all transfers.
+//
 // Revision 1.26  2001/12/03 21:44:29  gorban
 // Updated specification documentation.
 // Added full 32-bit data bus interface, now as default.
@@ -233,6 +237,7 @@ reg [4:0] 								mcr;
 reg [7:0] 								lcr;
 reg [7:0] 								msr;
 reg [15:0] 								dl;  // 32-bit divisor latch
+reg [7:0] 								scratch; // UART scratch register
 reg 										start_dlc; // activate dlc on writing to UART_DL1
 reg 										lsr_mask_d; // delay for lsr_mask condition
 reg 										msi_reset; // reset MSR 4 lower bits indicator
@@ -301,27 +306,21 @@ uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
 
 
 // Asynchronous reading here because the outputs are sampled in uart_wb.v file 
-always @(/*AUTOSENSE*/dl or dlab or ier or iir
+always @(dl or dlab or ier or iir or scratch
 			or lcr or lsr or msr or rf_data_out or wb_addr_i or wb_re_i)   // asynchrounous reading
 begin
-   if (wb_rst_i)
-   begin
-		wb_dat_o <= #1 8'b0;
-   end
-   else
-		if (wb_re_i)   //if (we're not writing)
-			case (wb_addr_i)
-				`UART_REG_RB   : wb_dat_o <= #1 dlab ? dl[`UART_DL1] : rf_data_out[10:3];
-				`UART_REG_IE	: wb_dat_o <= #1 dlab ? dl[`UART_DL2] : ier;
-				`UART_REG_II	: wb_dat_o <= #1 {4'b1100,iir};
-				`UART_REG_LC	: wb_dat_o <= #1 lcr;
-				`UART_REG_LS	: wb_dat_o <= #1 lsr;
-				`UART_REG_MS	: wb_dat_o <= #1 msr;
-				default:  wb_dat_o <= #1 8'b0; // ??
-			endcase // case(wb_addr_i)
-		else
-			wb_dat_o <= #1 8'b0;
-end // always @ (posedge clk or posedge wb_rst_i)
+	case (wb_addr_i)
+		`UART_REG_RB   : wb_dat_o = dlab ? dl[`UART_DL1] : rf_data_out[10:3];
+		`UART_REG_IE	: wb_dat_o = dlab ? dl[`UART_DL2] : ier;
+		`UART_REG_II	: wb_dat_o = {4'b1100,iir};
+		`UART_REG_LC	: wb_dat_o = lcr;
+		`UART_REG_LS	: wb_dat_o = lsr;
+		`UART_REG_MS	: wb_dat_o = msr;
+		`UART_REG_SR	: wb_dat_o = scratch;
+		default:  wb_dat_o = 8'b0; // ??
+	endcase // case(wb_addr_i)
+end // always @ (dl or dlab or ier or iir or scratch...
+
 
 // rf_pop signal handling
 always @(posedge clk or posedge wb_rst_i)
@@ -425,6 +424,15 @@ always @(posedge clk or posedge wb_rst_i)
 	else
 	if (wb_we_i && wb_addr_i==`UART_REG_MC)
 			mcr <= #1 wb_dat_i[4:0];
+
+// Scratch register
+// Line Control Register
+always @(posedge clk or posedge wb_rst_i)
+	if (wb_rst_i)
+		scratch <= #1 0; // 8n1 setting
+	else
+	if (wb_we_i && wb_addr_i==`UART_REG_SR)
+		scratch <= #1 wb_dat_i;
 
 // TX_FIFO or UART_DL1
 always @(posedge clk or posedge wb_rst_i)
