@@ -26,6 +26,7 @@
 ////  Author(s):                                                  ////
 ////      - gorban@opencores.org                                  ////
 ////      - Jacob Gorban                                          ////
+////      - Igor Mohor (igorm@opencores.org)                      ////
 ////                                                              ////
 ////  Created:        2001/05/12                                  ////
 ////  Last Updated:   2001/05/17                                  ////
@@ -34,7 +35,7 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
-//// Copyright (C) 2000 Jacob Gorban, gorban@opencores.org        ////
+//// Copyright (C) 2000, 2001 Authors                             ////
 ////                                                              ////
 //// This source file may be used and distributed without         ////
 //// restriction provided that this copyright statement is not    ////
@@ -62,6 +63,14 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.8  2001/08/23 16:05:05  mohor
+// Stop bit bug fixed.
+// Parity bug fixed.
+// WISHBONE read cycle bug fixed,
+// OE indicator (Overrun Error) bug fixed.
+// PE indicator (Parity Error) bug fixed.
+// Register read bug fixed.
+//
 // Revision 1.6  2001/06/23 11:21:48  gorban
 // DL made 16-bit long. Fixed transmission/reception bugs.
 //
@@ -253,19 +262,16 @@ begin
 			end
 	sr_ca_lc_parity : begin    // rcounter equals 6
 				rcounter16  <= #1 rcounter16_minus_1;
-				rparity_xor <= #1 ^{rshift,rparity}; // calculate parity on all incoming data
+//				rparity_xor <= #1 ^{rshift,rparity}; // calculate parity on all incoming data
+				rparity_xor <= #1 ^rshift; // calculate parity on all incoming data
 				rstate      <= #1 sr_check_parity;
 			  end
 	sr_check_parity: begin	  // rcounter equals 5
 				case ({lcr[`UART_LC_EP],lcr[`UART_LC_SP]})
-//				2'b00: rparity_error <= #1 ~rparity_xor;  // no error if parity 1
-//				2'b01: rparity_error <= #1 ~rparity;      // parity should sticked to 1
-//				2'b10: rparity_error <= #1 rparity_xor;   // error if parity is odd
-//				2'b11: rparity_error <= #1 rparity;	  // parity should be sticked to 0
-				2'b00: rparity_error <= #1 rparity_xor;  // no error if parity 1
-				2'b01: rparity_error <= #1 1'b1;      // parity should sticked to 1
-				2'b10: rparity_error <= #1 ~rparity_xor;   // error if parity is odd
-				2'b11: rparity_error <= #1 1'b0;	  // parity should be sticked to 0
+				2'b00: rparity_error <= #1  rparity_xor != rparity;  // no error if parity 1
+				2'b01: rparity_error <= #1 ~rparity;      // parity should sticked to 1
+				2'b10: rparity_error <= #1 ~rparity_xor != rparity;   // error if parity is odd
+				2'b11: rparity_error <= #1  rparity;	  // parity should be sticked to 0
 				endcase
 				rcounter16 <= #1 rcounter16_minus_1;
 				rstate <= #1 sr_wait1;
@@ -281,7 +287,7 @@ begin
 				if (rcounter16_eq_7)	// read the parity
 				begin
 					rframing_error <= #1 !srx_pad_i; // no framing error if input is 1 (stop bit)
-					rf_data_in <= #1 {rshift, rparity_error, rframing_error};
+//					rf_data_in <= #1 {rshift, rparity_error, rframing_error};         prestavljeno navzdol
 					rstate <= #1 sr_push;
 				end
 				rcounter16 <= #1 rcounter16_minus_1;
@@ -289,6 +295,7 @@ begin
 	sr_push :	begin
 ///////////////////////////////////////
 //				$display($time, ": received: %b", rf_data_in);
+  			rf_data_in <= #1 {rshift, rparity_error, rframing_error};   // igor !!! Nisem preprican, da sem to prestavil sem OK.
 				rf_push    <= #1 1'b1;
 				rstate     <= #1 sr_last;
 			end

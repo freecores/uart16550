@@ -27,6 +27,7 @@
 ////  Author(s):                                                  ////
 ////      - gorban@opencores.org                                  ////
 ////      - Jacob Gorban                                          ////
+////      - Igor Mohor (igorm@opencores.org)                      ////
 ////                                                              ////
 ////  Created:        2001/05/12                                  ////
 ////  Last Updated:   2001/05/17                                  ////
@@ -35,7 +36,7 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
-//// Copyright (C) 2000 Jacob Gorban, gorban@opencores.org        ////
+//// Copyright (C) 2000, 2001 Authors                             ////
 ////                                                              ////
 //// This source file may be used and distributed without         ////
 //// restriction provided that this copyright statement is not    ////
@@ -63,6 +64,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.8  2001/08/24 08:48:10  mohor
+// FIFO was not cleared after the data was read bug fixed.
+//
 // Revision 1.7  2001/08/23 16:05:05  mohor
 // Stop bit bug fixed.
 // Parity bug fixed.

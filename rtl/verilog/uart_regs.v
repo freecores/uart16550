@@ -26,6 +26,7 @@
 ////  Author(s):                                                  ////
 ////      - gorban@opencores.org                                  ////
 ////      - Jacob Gorban                                          ////
+////      - Igor Mohor (igorm@opencores.org)                      ////
 ////                                                              ////
 ////  Created:        2001/05/12                                  ////
 ////  Last Updated:   (See log for the revision history           ////
@@ -33,7 +34,7 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
-//// Copyright (C) 2000 Jacob Gorban, gorban@opencores.org        ////
+//// Copyright (C) 2000, 2001 Authors                             ////
 ////                                                              ////
 //// This source file may be used and distributed without         ////
 //// restriction provided that this copyright statement is not    ////
@@ -61,6 +62,14 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.9  2001/08/23 16:05:05  mohor
+// Stop bit bug fixed.
+// Parity bug fixed.
+// WISHBONE read cycle bug fixed,
+// OE indicator (Overrun Error) bug fixed.
+// PE indicator (Parity Error) bug fixed.
+// Register read bug fixed.
+//
 // Revision 1.10  2001/06/23 11:21:48  gorban
 // DL made 16-bit long. Fixed transmission/reception bugs.
 //
@@ -96,7 +105,6 @@ module uart_regs (clk,
 // additional signals
 	modem_inputs,
 	stx_pad_o, srx_pad_i,
-	enable,
 	rts_pad_o, dtr_pad_o, int_o
 	);
 
@@ -112,7 +120,6 @@ output		stx_pad_o;
 input		srx_pad_i;
 
 input	[3:0]	modem_inputs;
-output		enable;
 output		rts_pad_o;
 output		dtr_pad_o;
 output		int_o;
@@ -414,44 +421,36 @@ begin
 	end
 end
 
+
+// Frequency divider
+always @(posedge clk or posedge wb_rst_i)
+begin
+	if (wb_rst_i)
+		dlc <= #1 0;
+	else
+  if (start_dlc | ~ (|dlc))
+  	dlc <= #1 dl - 1;               // preset counter
+	else
+		dlc <= #1 dlc - 1;              // decrement counter
+end
+
 // Enable signal generation logic
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
-	begin
-		dlc    <= #1 0;
 		enable <= #1 1'b0;
-	end
 	else
-	begin
-		if (start_dlc)
-		begin
-			enable <= #1 1'b0;
-			dlc    <= #1 dl;
-		end
-		else
-		begin
-			if (dl!=0)
-			begin
-				if ( (dlc-1)==0 )
-				begin
-					enable <= #1 1'b1;
-					dlc <= #1 dl;
-				end
-				else
-				begin
-					enable <= #1 1'b0;
-					dlc <= #1 dlc - 1;
-				end
-			end
-			else
-			begin
-				dlc <= #1 0;
-				enable <= #1 1'b0;
-			end
-		end
-	end
+  if (|dl & ~(|dlc))     // dl>0 & dlc==0
+		enable <= #1 1'b1;
+  else
+		enable <= #1 1'b0;
 end
+
+
+
+
+
+
 
 //
 //	INTERRUPT LOGIC
