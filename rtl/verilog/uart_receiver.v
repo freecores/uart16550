@@ -63,6 +63,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.13  2001/11/08 14:54:23  mohor
+// Comments in Slovene language deleted, few small fixes for better work of
+// old tools. IRQs need to be fix.
+//
 // Revision 1.12  2001/11/07 17:51:52  gorban
 // Heavily rewritten interrupt and LSR subsystems.
 // Many bugs hopefully squashed.
@@ -326,7 +330,7 @@ end // always of receiver
 //
 // Break condition detection.
 // Works in conjuction with the receiver state machine
-reg	[7:0]	counter_b;	// counts the 1 (idle) signals
+reg	[7:0]	counter_b;	// counts the 0 (low) signals
 
 always @(posedge clk or posedge wb_rst_i)
 begin
@@ -340,8 +344,8 @@ begin
 		if (srx_pad_i)
 			counter_b <= #1 8'd191; // maximum character time length - 1
 		else
-  	if (counter_b != 8'b0)            // break not reached it
-		  counter_b <= #1 counter_b - 1;  // decrement break counter
+  			if (counter_b != 8'b0)            // break not reached it
+				counter_b <= #1 counter_b - 1;  // decrement break counter
 end // always of break condition detection
 
 ///

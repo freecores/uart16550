@@ -62,6 +62,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.18  2001/11/08 14:54:23  mohor
+// Comments in Slovene language deleted, few small fixes for better work of
+// old tools. IRQs need to be fix.
+//
 // Revision 1.17  2001/11/07 17:51:52  gorban
 // Heavily rewritten interrupt and LSR subsystems.
 // Many bugs hopefully squashed.
@@ -174,7 +178,7 @@ reg [15:0] 								dl;  // 32-bit divisor latch
 reg 										start_dlc; // activate dlc on writing to UART_DL1
 reg 										lsr_mask_d; // delay for lsr_mask condition
 reg 										msi_reset; // reset MSR 4 lower bits indicator
-reg 										threi_clear; // THRE interrupt clear flag
+//reg 										threi_clear; // THRE interrupt clear flag
 reg [15:0] 								dlc;  // 32-bit divisor latch counter
 reg 										int_o;
 
@@ -312,6 +316,7 @@ begin
 		msi_reset <= #1 1; // reset bits in Modem Status Register
 end
 
+/*
 // threi_clear signal handling
 always @(posedge clk or posedge wb_rst_i)
 begin
@@ -322,8 +327,9 @@ begin
 		threi_clear <= #1 0;
 	else
 	if (wb_re_i && wb_addr_i == `UART_REG_II)
-		threi_clear <= #1 1; // reset bits in Modem Status Register
+		threi_clear <= #1 1;
 end
+*/
 
 //
 //   WRITES AND RESETS   //
@@ -454,8 +460,8 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr1_d <= #1 lsr1;
 
 always @(posedge clk or posedge wb_rst_i)
-	lsr1r <= #1 wb_rst_i ? 0 : // clear status on read
-				lsr_mask ? 0 : lsr1 && ~lsr1_d; // set on rise
+	if (wb_rst_i) lsr1_d <= #1 0;
+	else	lsr1r <= #1	lsr_mask ? 0 : lsr1 && ~lsr1_d; // set on rise
 
 // lsr bit 2 (parity error)
 reg lsr2_d; // delayed
@@ -465,8 +471,8 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr2_d <= #1 lsr2;
 
 always @(posedge clk or posedge wb_rst_i)
-	lsr2r <= #1 wb_rst_i ? 0 : // clear status on read
-				lsr_mask ? 0 : lsr2 && ~lsr2_d; // set on rise
+	if (wb_rst_i) lsr2_d <= #1 0;
+	else lsr2r <= #1 lsr_mask ? 0 : lsr2 && ~lsr2_d; // set on rise
 
 // lsr bit 3 (framing error)
 reg lsr3_d; // delayed
@@ -476,8 +482,8 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr3_d <= #1 lsr3;
 
 always @(posedge clk or posedge wb_rst_i)
-	lsr3r <= #1 wb_rst_i ? 0 : // clear status on read
-				lsr_mask ? 0 : lsr3 && ~lsr3_d; // set on rise
+	if (wb_rst_i) lsr3_d <= #1 0;
+	else lsr3r <= #1 lsr_mask ? 0 : lsr3 && ~lsr3_d; // set on rise
 
 // lsr bit 4 (break indicator)
 reg lsr4_d; // delayed
@@ -487,9 +493,8 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr4_d <= #1 lsr4;
 
 always @(posedge clk or posedge wb_rst_i)
-	lsr4r <= #1  wb_rst_i ? 0 :
-			  lsr_mask ? 0 : lsr4 && ~lsr4_d;
-
+	if (wb_rst_i) lsr4_d <= #1 0;
+	else lsr4r <= #1 lsr_mask ? 0 : lsr4 && ~lsr4_d;
 
 // lsr bit 5 (transmitter fifo is empty)
 reg lsr5_d;
@@ -501,8 +506,8 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr5_d <= #1 lsr5;
 
 always @(posedge clk or posedge wb_rst_i)
-	lsr5r <= #1 wb_rst_i ? 1 :
-			(lsr_mask || iir_read || tx_fifo_write) ? 0 :  lsr5 && ~lsr5_d;
+	if (wb_rst_i) lsr5_d <= #1 0;
+	else lsr5r <= #1 (lsr_mask || iir_read || tx_fifo_write) ? 0 :  lsr5 && ~lsr5_d;
 
 // lsr bit 6 (transmitter empty indicator)
 reg lsr6_d;
@@ -512,8 +517,8 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr6_d <= #1 lsr6;
 
 always @(posedge clk or posedge wb_rst_i)
-	lsr6r <= #1 wb_rst_i ? 1 :
-				 (lsr_mask || tx_fifo_write) ? 0 : lsr6 && ~lsr6_d;
+	if (wb_rst_i) lsr6_d <= #1 0;
+	else lsr6r <= #1 (lsr_mask || tx_fifo_write) ? 0 : lsr6 && ~lsr6_d;
 
 // lsr bit 7 (error in fifo)
 reg lsr7_d;
@@ -523,8 +528,8 @@ always @(posedge clk or posedge wb_rst_i)
 	else lsr7_d <= #1 lsr7;
 
 always @(posedge clk or posedge wb_rst_i)
-	lsr7r <= #1  wb_rst_i ? 0 :
-			  lsr_mask ? 0 : lsr7 && ~lsr7_d;
+	if (wb_rst_i) lsr7_d <= #1 0;
+	else lsr7r <= #1 lsr_mask ? 0 : lsr7 && ~lsr7_d;
 
 // Frequency divider
 always @(posedge clk or posedge wb_rst_i) 
@@ -556,7 +561,8 @@ end
 
 assign rls_int  = ier[`UART_IE_RLS] && (lsr[`UART_LS_OE] || lsr[`UART_LS_PE] || lsr[`UART_LS_FE] || lsr[`UART_LS_BI]);
 assign rda_int  = ier[`UART_IE_RDA] && (rf_count >= {1'b0,trigger_level});
-assign thre_int = threi_clear ? 0 : ier[`UART_IE_THRE] && lsr[`UART_LS_TFE];
+//assign thre_int = threi_clear ? 0 : ier[`UART_IE_THRE] && lsr[`UART_LS_TFE];
+assign thre_int = ier[`UART_IE_THRE] && lsr[`UART_LS_TFE];
 assign ms_int   = ier[`UART_IE_MS] && (| msr[3:0]);
 assign ti_int   = ier[`UART_IE_RDA] && (counter_t == 10'b0);
 
@@ -678,7 +684,7 @@ begin
 		iir[`UART_II_IP] <= #1 1'b0;
 	end else	// no interrupt is pending
 	begin
-		iir[`UART_II_II] <= #1 1'b0;
+		iir[`UART_II_II] <= #1 0;
 		iir[`UART_II_IP] <= #1 1'b1;
 	end
 end
