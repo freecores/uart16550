@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.20  2001/12/10 19:52:05  gorban
+// Igor fixed break condition bugs
+//
 // Revision 1.19  2001/12/06 14:51:04  gorban
 // Bug in LSR[0] is fixed.
 // All WISHBONE signals are now sampled, so another wait-state is introduced on all transfers.
@@ -426,7 +429,7 @@ begin
 	if (wb_rst_i)
 		counter_t <= #1 10'd639; // 10 bits for the default 8N1
 	else
-		if(rf_push || rf_pop || rda_int || rf_count == 0) // counter is reset when RX FIFO is empty, accessed or above trigger level
+		if(rf_push || rf_pop || rf_count == 0) // counter is reset when RX FIFO is empty, accessed or above trigger level
 			counter_t <= #1 toc_value;
 		else
 		if (enable && counter_t != 10'b0)  // we don't want to underflow
