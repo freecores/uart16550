@@ -64,6 +64,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.16  2001/12/06 14:51:04  gorban
+// Bug in LSR[0] is fixed.
+// All WISHBONE signals are now sampled, so another wait-state is introduced on all transfers.
+//
 // Revision 1.15  2001/12/03 21:44:29  gorban
 // Updated specification documentation.
 // Added full 32-bit data bus interface, now as default.
@@ -272,10 +276,7 @@ uart_debug_if dbg(/*AUTOINST*/
 						// Outputs
 						.wb_dat32_o				 (wb_dat32_o[31:0]),
 						// Inputs
-						.wb_clk_i				 (wb_clk_i),
-						.wb_rst_i				 (wb_rst_i),
 						.wb_adr_i				 (wb_adr_int[`UART_ADDR_WIDTH-1:0]),
-						.re_o						 (re_o),
 						.ier						 (ier[3:0]),
 						.iir						 (iir[3:0]),
 						.fcr						 (fcr[1:0]),

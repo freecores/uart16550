@@ -54,6 +54,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.2  2001/12/12 22:17:30  gorban
+// some synthesis bugs fixed
+//
 // Revision 1.1  2001/12/04 21:14:16  gorban
 // committed the debug interface file
 //
@@ -68,15 +71,12 @@ module uart_debug_if (/*AUTOARG*/
 // Outputs
 wb_dat32_o, 
 // Inputs
-wb_clk_i, wb_rst_i, wb_adr_i, re_o, ier, iir, fcr, mcr, lcr, msr, 
+wb_adr_i, ier, iir, fcr, mcr, lcr, msr, 
 lsr, rf_count, tf_count, tstate, rstate
 ) ;
 
-input 									wb_clk_i;
-input 									wb_rst_i;
 input [`UART_ADDR_WIDTH-1:0] 		wb_adr_i;
 output [31:0] 							wb_dat32_o;
-input 									re_o;
 input [3:0] 							ier;
 input [3:0] 							iir;
 input [1:0] 							fcr;  /// bits 7 and 6 of fcr. Other bits are ignored
