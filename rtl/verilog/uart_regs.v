@@ -62,6 +62,14 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.24  2001/11/26 21:38:54  gorban
+// Lots of fixes:
+// Break condition wasn't handled correctly at all.
+// LSR bits could lose their values.
+// LSR value after reset was wrong.
+// Timing of THRE interrupt signal corrected.
+// LSR bit 0 timing corrected.
+//
 // Revision 1.23  2001/11/12 21:57:29  gorban
 // fixed more typo bugs
 //
@@ -326,7 +334,7 @@ begin
 	if (msi_reset)
 		msi_reset <= #1 0;
 	else
-	if (wb_re_i && wb_addr_i == `UART_REG_MS)
+	if (msr_read)
 		msi_reset <= #1 1; // reset bits in Modem Status Register
 end
 

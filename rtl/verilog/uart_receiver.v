@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.16  2001/11/27 22:17:09  gorban
+// Fixed bug that prevented synthesis in uart_receiver.v
+//
 // Revision 1.15  2001/11/26 21:38:54  gorban
 // Lots of fixes:
 // Break condition wasn't handled correctly at all.
@@ -354,17 +357,34 @@ end // always of receiver
 // Break condition detection.
 // Works in conjuction with the receiver state machine
 
+reg 	[9:0]	toc_value; // value to be set to timeout counter
+
+always @(lcr)
+	case (lcr[3:0])
+		4'b0000										: toc_value = 447; // 7 bits
+		4'b0100										: toc_value = 479; // 7.5 bits
+		4'b0001,	4'b1000							: toc_value = 511; // 8 bits
+		4'b1100										: toc_value = 543; // 8.5 bits
+		4'b0010, 4'b0101, 4'b1001				: toc_value = 575; // 9 bits
+		4'b0011, 4'b0110, 4'b1010, 4'b1101	: toc_value = 639; // 10 bits
+		4'b0111, 4'b1011, 4'b1110				: toc_value = 703; // 11 bits
+		4'b1111										: toc_value = 767; // 12 bits
+	endcase // case(lcr[3:0])
+
+wire [7:0] 	brc_value; // value to be set to break counter
+assign 		brc_value = toc_value[9:2]; // the same as timeout but 1 insead of 4 character times
+
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
-		counter_b <= #1 8'd191;
+		counter_b <= #1 8'd159;
 	else
   if(lsr_mask)
-		counter_b <= #1 8'd191;
+		counter_b <= #1 brc_value;
   else
 	if (enable)  // only work on enable times
 		if (srx_pad_i)
-			counter_b <= #1 8'd191; // maximum character time length - 1
+			counter_b <= #1 brc_value; // character time length - 1
 		else
   			if (counter_b != 8'b0)            // break not reached it
 				counter_b <= #1 counter_b - 1;  // decrement break counter
@@ -377,10 +397,10 @@ reg	[9:0]	counter_t;	// counts the timeout condition clocks
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
-		counter_t <= #1 10'd767;
+		counter_t <= #1 10'd639; // 10 bits for the default 8N1
 	else
 		if(rf_push || rf_pop || rda_int || rf_count == 0) // counter is reset when RX FIFO is empty, accessed or above trigger level
-			counter_t <= #1 10'd767;
+			counter_t <= #1 toc_value;
 		else
 		if (enable && counter_t != 10'b0)  // we don't want to underflow
 			counter_t <= #1 counter_t - 1;		
