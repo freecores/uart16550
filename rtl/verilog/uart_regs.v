@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.25  2001/11/28 19:36:39  gorban
+// Fixed: timeout and break didn't pay attention to current data format when counting time
+//
 // Revision 1.24  2001/11/26 21:38:54  gorban
 // Lots of fixes:
 // Break condition wasn't handled correctly at all.
@@ -161,6 +164,12 @@ module uart_regs (clk,
 // additional signals
 	modem_inputs,
 	stx_pad_o, srx_pad_i,
+
+`ifdef DATA_BUS_WIDTH_8
+`else
+// debug interface signals	enabled
+ier, iir, fcr, mcr, lcr, msr, lsr, rf_count, tf_count, tstate, rstate,
+`endif				
 	rts_pad_o, dtr_pad_o, int_o
 	);
 
@@ -179,6 +188,23 @@ input [3:0] 							modem_inputs;
 output 									rts_pad_o;
 output 									dtr_pad_o;
 output 									int_o;
+
+`ifdef DATA_BUS_WIDTH_8
+`else
+// if 32-bit databus and debug interface are enabled
+output [3:0]							ier;
+output [3:0]							iir;
+output [1:0]							fcr;  /// bits 7 and 6 of fcr. Other bits are ignored
+output [4:0]							mcr;
+output [7:0]							lcr;
+output [7:0]							msr;
+output [7:0] 							lsr;
+output [`UART_FIFO_COUNTER_W-1:0] 	rf_count;
+output [`UART_FIFO_COUNTER_W-1:0] 	tf_count;
+output [2:0] 							tstate;
+output [3:0] 							rstate;
+
+`endif
 
 wire [3:0] 								modem_inputs;
 reg 										enable;
@@ -252,40 +278,40 @@ wire [`UART_FIFO_REC_WIDTH-1:0] 	rf_data_out;
 wire 										rf_error_bit; // an error (parity or framing) is inside the fifo
 wire [`UART_FIFO_COUNTER_W-1:0] 	rf_count;
 wire [`UART_FIFO_COUNTER_W-1:0] 	tf_count;
-wire [2:0] 								state;
+wire [2:0] 								tstate;
+wire [3:0] 								rstate;
 wire [9:0] 								counter_t;
 
 
 // Transmitter Instance
-uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_pad_o, state, tf_count, tx_reset, lsr_mask);
+uart_transmitter transmitter(clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable, stx_pad_o, tstate, tf_count, tx_reset, lsr_mask);
 
 // Receiver Instance
 uart_receiver receiver(clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
-	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask);
+	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate);
 
 
-always @(posedge clk or posedge wb_rst_i)   // synchrounous reading
+// Asynchronous reading here because the outputs are sampled in uart_wb.v file 
+always @(/*AUTOSENSE*/dl or dlab or ier or iir
+			or lcr or lsr or msr or rf_data_out or wb_addr_i or wb_re_i)   // asynchrounous reading
 begin
-    if (wb_rst_i)
-    begin
-	wb_dat_o <= #1 8'b0;
-    end
-    else
-    if (wb_re_i)   //if (we're not writing)
-	case (wb_addr_i)
-	`UART_REG_RB : if (dlab) // Receiver FIFO or DL byte 1
-			wb_dat_o <= #1 dl[`UART_DL1];
-		  else
-			wb_dat_o <= #1 rf_data_out[10:3];
-	`UART_REG_IE	: wb_dat_o <= #1 dlab ? dl[`UART_DL2] : ier;
-	`UART_REG_II	: wb_dat_o <= #1 {4'b1100,iir};
-	`UART_REG_LC	: wb_dat_o <= #1 lcr;
-	`UART_REG_LS	: wb_dat_o <= #1 lsr;
-	`UART_REG_MS	: wb_dat_o <= #1 msr;
-	default:  wb_dat_o <= #1 8'b0; // ??
-	endcase // case(wb_addr_i)
-     else
-	wb_dat_o <= #1 8'b0;
+   if (wb_rst_i)
+   begin
+		wb_dat_o <= #1 8'b0;
+   end
+   else
+		if (wb_re_i)   //if (we're not writing)
+			case (wb_addr_i)
+				`UART_REG_RB   : wb_dat_o <= #1 dlab ? dl[`UART_DL1] : rf_data_out[10:3];
+				`UART_REG_IE	: wb_dat_o <= #1 dlab ? dl[`UART_DL2] : ier;
+				`UART_REG_II	: wb_dat_o <= #1 {4'b1100,iir};
+				`UART_REG_LC	: wb_dat_o <= #1 lcr;
+				`UART_REG_LS	: wb_dat_o <= #1 lsr;
+				`UART_REG_MS	: wb_dat_o <= #1 msr;
+				default:  wb_dat_o <= #1 8'b0; // ??
+			endcase // case(wb_addr_i)
+		else
+			wb_dat_o <= #1 8'b0;
 end // always @ (posedge clk or posedge wb_rst_i)
 
 // rf_pop signal handling
@@ -466,7 +492,7 @@ assign lsr2 = rf_data_out[1]; // parity error bit
 assign lsr3 = rf_data_out[0]; // framing error bit
 assign lsr4 = rf_data_out[2]; // break error in the character
 assign lsr5 = (tf_count==5'b0);  // transmitter fifo is empty
-assign lsr6 = (tf_count==5'b0 && (state == /*`S_IDLE */ 0)); // transmitter empty
+assign lsr6 = (tf_count==5'b0 && (tstate == /*`S_IDLE */ 0)); // transmitter empty
 assign lsr7 = rf_error_bit;
 
 // lsr bit0 (receiver data available)
@@ -536,7 +562,7 @@ always @(posedge clk or posedge wb_rst_i)
 
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i) lsr5r <= #1 1;
-	else lsr5r <= #1 (lsr_mask || iir_read || tx_fifo_write) ? 0 :  lsr5r || (lsr5 && ~lsr5_d);
+	else lsr5r <= #1 (tx_fifo_write) ? 0 :  lsr5r || (lsr5 && ~lsr5_d);
 
 // lsr bit 6 (transmitter empty indicator)
 reg lsr6_d;
@@ -547,7 +573,7 @@ always @(posedge clk or posedge wb_rst_i)
 
 always @(posedge clk or posedge wb_rst_i)
 	if (wb_rst_i) lsr6r <= #1 1;
-	else lsr6r <= #1 (lsr_mask || tx_fifo_write) ? 0 : lsr6r || (lsr6 && ~lsr6_d);
+	else lsr6r <= #1 (tx_fifo_write) ? 0 : lsr6r || (lsr6 && ~lsr6_d);
 
 // lsr bit 7 (error in fifo)
 reg lsr7_d;

@@ -73,7 +73,7 @@
 // Initial revision
 //
 //
-
+//`define DATA_BUS_WIDTH_8
 `include "timescale.v"
 module uart_test ();
 
@@ -81,25 +81,12 @@ module uart_test ();
 
 reg				clkr;
 reg				wb_rst_ir;
-reg	[`UART_ADDR_WIDTH-1:0]	wb_addr_ir;
-reg	[7:0]			wb_dat_ir;
-wire	[7:0]			wb_dat_o;
-reg				wb_we_ir;
-reg				wb_stb_ir;
-reg				wb_cyc_ir;
-wire				wb_ack_o;
-wire				int_o;
+wire	[`UART_ADDR_WIDTH-1:0]	wb_adr_i;
+wire	[31:0]	wb_dat_i;
+wire	[31:0]	wb_dat_o;
+wire [3:0]		wb_sel_i;
 wire				pad_stx_o;
 reg				pad_srx_ir;
-wire				rts_o;
-reg				cts_ir;
-wire				dtr_o;
-reg				dsr_ir;
-reg				ri_ir;
-reg				dcd_ir;
-wire	[2:0]			wb_addr_i;
-wire	[7:0]			wb_dat_i;
-
 
 integer e;
 
@@ -107,7 +94,7 @@ uart_top	uart_snd(
 	clk, 
 	
 	// Wishbone signals
-	wb_rst_i, wb_addr_i, wb_dat_i, wb_dat_o, wb_we_i, wb_stb_i, wb_cyc_i, wb_ack_o,	
+						wb_rst_i, wb_adr_i, wb_dat_i, wb_dat_o, wb_we_i, wb_stb_i, wb_cyc_i, wb_ack_o,	wb_sel_i,
 	int_o, // interrupt request
 
 	// UART	signals
@@ -122,31 +109,19 @@ uart_top	uart_snd(
 
 // All the signals and regs named with a 1 are receiver fifo signals
 
-reg	[`UART_ADDR_WIDTH-1:0]	wb1_addr_ir;
-reg	[7:0]			wb1_dat_ir;
-wire	[7:0]			wb1_dat_o;
-reg				wb1_we_ir;
-reg				wb1_stb_ir;
-reg				wb1_cyc_ir;
-wire				wb1_ack_o;
+wire	[`UART_ADDR_WIDTH-1:0]	wb1_adr_i;
+wire	[31:0]			wb1_dat_i;
+wire	[31:0]			wb1_dat_o;
+wire [3:0] 		wb1_sel_i;
 wire				int1_o;
 wire				stx1_o;
 reg				srx1_ir;
-wire				rts1_o;
-reg				cts1_ir;
-wire				dtr1_o;
-reg				dsr1_ir;
-reg				ri1_ir;
-reg				dcd1_ir;
-wire	[2:0]			wb1_addr_i;
-wire	[7:0]			wb1_dat_i;
-
 
 uart_top	uart_rcv(
 	clk, 
 	
 	// Wishbone signals
-	wb_rst_i, wb1_addr_i, wb1_dat_i, wb1_dat_o, wb1_we_i, wb1_stb_i, wb1_cyc_i, wb1_ack_o,	
+	wb_rst_i, wb1_adr_i, wb1_dat_i, wb1_dat_o, wb1_we_i, wb1_stb_i, wb1_cyc_i, wb1_ack_o, wb1_sel_i,	
 	int1_o, // interrupt request
 
 	// UART	signals
@@ -159,29 +134,20 @@ uart_top	uart_rcv(
 	);
 
 assign clk = clkr;
-assign wb_dat_i = wb_dat_ir;
-assign wb_we_i = wb_we_ir;
 assign wb_rst_i = wb_rst_ir;
-assign wb_addr_i = wb_addr_ir;
-assign wb_stb_i = wb_stb_ir;
-assign wb_cyc_i = wb_cyc_ir;
 assign pad_srx_i = pad_srx_ir;
 assign cts_i = 1; //cts_ir;
 assign dsr_i = 1; //dsr_ir;
 assign ri_i = 1; //ri_ir;
 assign dcd_i = 1; //dcd_ir;
 
-assign wb1_dat_i = wb1_dat_ir;
-assign wb1_we_i = wb1_we_ir;
-assign wb1_addr_i = wb1_addr_ir;
-assign wb1_stb_i = wb1_stb_ir;
-assign wb1_cyc_i = wb1_cyc_ir;
 assign srx1_i = srx1_ir;
 assign cts1_i = 1; //cts1_ir;
 assign dsr1_i = 1; //dsr1_ir;
 assign ri1_i = 1; //ri1_ir;
 assign dcd1_i = 1; //dcd1_ir;
 
+reg [31:0] dat_o;
 /////////// CONNECT THE UARTS
 always @(pad_stx_o)
 begin
@@ -194,102 +160,90 @@ begin
 	#50000 $finish;
 end
 
-task cycle;    // transmitter
-input		we;
-input	[2:0]	addr;
-input	[7:0]	dat;		
-begin
-	@(negedge clk)
-	wb_addr_ir <= #1 addr;
-	wb_we_ir <= #1 we;
-	wb_dat_ir <= #1 dat;
-	wb_stb_ir <= #1 1;
-	wb_cyc_ir <= #1 1;
-	wait (wb_ack_o==1)
-	@(posedge clk);
-	wb_we_ir <= #1 0;
-	wb_stb_ir<= #1 0;
-	wb_cyc_ir<= #1 0;
-end
-endtask
+wb_mast wbm(// Outputs
+				.adr								 (wb_adr_i),
+				.dout								 (wb_dat_i),
+				.cyc								 (wb_cyc_i),
+				.stb								 (wb_stb_i),
+				.sel								 (wb_sel_i),
+				.we								 (wb_we_i),
+				// Inputs
+				.clk								 (clk),
+				.rst								 (wb_rst_i),
+				.din								 (wb_dat_o),
+				.ack								 (wb_ack_o),
+				.err								 (1'b0),
+				.rty								 (1'b0));
 
-task cycle1;   // receiver
-input		we;
-input	[2:0]	addr;
-input	[7:0]	dat;		
-begin
-	@(negedge clk)
-	wb1_addr_ir <= #1 addr;
-	wb1_we_ir <= #1 we;
-	wb1_dat_ir <= #1 dat;
-	wb1_stb_ir <= #1 1;
-	wb1_cyc_ir <= #1 1;
-	wait (wb1_ack_o==1)
-	@(posedge clk);
-	wb1_we_ir <= #1 0;
-	wb1_stb_ir<= #1 0;
-	wb1_cyc_ir<= #1 0;
-end
-endtask
+wb_mast wbm1(// Outputs
+				 .adr								 (wb1_adr_i),
+				 .dout							 (wb1_dat_i),
+				 .cyc								 (wb1_cyc_i),
+				 .stb								 (wb1_stb_i),
+				 .sel								 (wb1_sel_i),
+				 .we								 (wb1_we_i),
+				 // Inputs
+				 .clk								 (clk),
+				 .rst								 (wb_rst_i),
+				 .din								 (wb1_dat_o),
+				 .ack								 (wb1_ack_o),
+				 .err								 (1'b0),
+				 .rty								 (1'b0));
 
 // The test sequence
 initial
 begin
 	#1 wb_rst_ir = 1;
 	#10 wb_rst_ir = 0;
-	wb_stb_ir = 0;
-	wb_cyc_ir = 0;
-	wb_we_ir = 0;
-	
+		
 	//write to lcr. set bit 7
 	//wb_cyc_ir = 1;
-	cycle(1, `UART_REG_LC, 8'b10011011);
+	wbm.wb_wr1(`UART_REG_LC, 4'b1000, {8'b10011011, 24'b0});
 	// set dl to divide by 3
-	cycle(1, `UART_REG_DL1, 8'd2);
+	wbm.wb_wr1(`UART_REG_DL1,4'b0001, 32'd2);
 	@(posedge clk);
 	@(posedge clk);
 	// restore normal registers
-	cycle(1, `UART_REG_LC, 8'b00011011);
-	$display("%m : %t : sending : %b", $time, 8'b01101011);
-	cycle(1, 0, 8'b01101011);
+	wbm.wb_wr1(`UART_REG_LC, 4'b1000, {8'b00011011, 24'b0}); //00011011 
+	$display("%m : %t : sending : %h", $time, 8'b01101011);
+	wbm.wb_wr1(0, 4'b1, 32'b01101011);
 	@(posedge clk);
 	@(posedge clk);
-	$display("%m : %t : sending : %b", $time, 8'b01000101);
-	cycle(1, 0, 8'b01000101);
-	wait (uart_snd.regs.state==0 && uart_snd.regs.transmitter.tf_count==0);
+	$display("%m : %t : sending : %h", $time, 8'b01000101);
+	wbm.wb_wr1(0, 4'b1, 32'b01000101);
+	wait (uart_snd.regs.tstate==0 && uart_snd.regs.transmitter.tf_count==0);
 end
 
-always @(int_o)
-begin
-	if (int_o) begin
-		$display("INT_O high (%0t) %d", $time, e);
-		@(posedge clk);
-		@(posedge clk);
-		@(posedge clk);
-		$display("IIR : %b", uart_rcv.regs.iir);
-	end
+always @(int1_o)
+	if (int1_o)
+		$display("INT_O high (%g)", $time);
 	else
-		$display("INT_O low (%0t)", $time);
+		$display("INT_O low (%g)", $time);
+		
+always @(int1_o)
+begin
+	if (int1_o) begin
+		wbm1.wb_rd1(2,4'b0100, dat_o);
+		$display("IIR : %h", dat_o);
+		wbm1.wb_rd1(5,4'b0010, dat_o);
+		$display("LSR : %h", dat_o);
+	end
 end
 
 // receiver side
 initial
 begin
 	#11;
-	wb1_stb_ir = 0;
-	wb1_cyc_ir = 0;
-	wb1_we_ir = 0;
-	
 	//write to lcr. set bit 7
 	//wb_cyc_ir = 1;
-	cycle1(1, `UART_REG_LC, 8'b10011011);
+	wbm1.wb_wr1(`UART_REG_LC, 4'b1000, {8'b10011011, 24'b0});
 	// set dl to divide by 3
-	cycle1(1, `UART_REG_DL1, 8'd2);
+	wbm1.wb_wr1(`UART_REG_DL1, 4'b1, 32'd2);
 	@(posedge clk);
 	@(posedge clk);
 	// restore normal registers
-	cycle1(1, `UART_REG_LC, 8'b00011011);
-	cycle1(1, `UART_REG_IE, 8'b00001111);
+	wbm1.wb_wr1(`UART_REG_LC, 4'b1000, {8'b00011011, 24'b0});
+	wbm1.wb_wr1(`UART_REG_IE, 4'b0010, {16'b0, 8'b00001111, 8'b0});
 	wait(uart_rcv.regs.receiver.rf_count == 2);
 		e = 800;
 	while (e > 0)
@@ -297,12 +251,11 @@ begin
 		@(posedge clk)
  		if (uart_rcv.regs.enable) e = e - 1;
 	end
-
-	cycle1(0, 0, 0);
-	$display("%m : %t : Data out: %b", $time, wb1_dat_o);
+	wbm1.wb_rd1(0, 4'b1, dat_o);
+	$display("%m : %t : Data out: %h", $time, dat_o);
 	@(posedge clk);
-	cycle1(0, 0, 0);
-	$display("%m : %t : Data out: %b", $time, wb1_dat_o);
+	wbm1.wb_rd1(0, 4'b1, dat_o);
+	$display("%m : %t : Data out: %h", $time, dat_o);
 	$display("%m : Finish");
 	e = 800;
 	while (e > 0)
@@ -323,6 +276,18 @@ end
 //begin
 //	$display($time,": Receiver state changed to: ", uart_rcv.regs.rstate);
 //end
+
+initial
+	begin
+		`ifdef DATA_BUS_WIDTH_8
+$display("DATA BUS IS 8");
+`else
+$display("DATA BUS IS 32");
+`endif
+		$display("%d %d", `UART_ADDR_WIDTH, `UART_DATA_WIDTH);
+
+	end
+
 
 always
 begin

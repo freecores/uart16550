@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.17  2001/11/28 19:36:39  gorban
+// Fixed: timeout and break didn't pay attention to current data format when counting time
+//
 // Revision 1.16  2001/11/27 22:17:09  gorban
 // Fixed bug that prevented synthesis in uart_receiver.v
 //
@@ -133,7 +136,7 @@
 `include "uart_defines.v"
 
 module uart_receiver (clk, wb_rst_i, lcr, rf_pop, srx_pad_i, enable, rda_int,
-	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask);
+	counter_t, rf_count, rf_data_out, rf_error_bit, rf_overrun, rx_reset, lsr_mask, rstate);
 
 input				clk;
 input				wb_rst_i;
@@ -150,6 +153,7 @@ output	[`UART_FIFO_COUNTER_W-1:0]	rf_count;
 output	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_out;
 output				rf_overrun;
 output				rf_error_bit;
+output [3:0] 		rstate;
 
 reg	[3:0]	rstate;
 reg	[3:0]	rcounter16;

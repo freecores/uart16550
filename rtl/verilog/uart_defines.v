@@ -63,6 +63,14 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.8  2001/11/26 21:38:54  gorban
+// Lots of fixes:
+// Break condition wasn't handled correctly at all.
+// LSR bits could lose their values.
+// LSR value after reset was wrong.
+// Timing of THRE interrupt signal corrected.
+// LSR bit 0 timing corrected.
+//
 // Revision 1.7  2001/08/24 21:01:12  mohor
 // Things connected to parity changed.
 // Clock devider changed.
@@ -89,22 +97,31 @@
 //
 //
 
-`define UART_ADDR_WIDTH	3
+// remove comments to restore use to the old version with 8 data bit interface
+// in new mode (32bit bus), the wb_sel_i signal is used to pus data in correct place
+// also, in 8-bit version there'll be no debugging features included
+// `define DATA_BUS_WIDTH_8
+
+`ifdef DATA_BUS_WIDTH_8
+ `define UART_ADDR_WIDTH 3
+ `define UART_DATA_WIDTH 8
+`else
+ `define UART_ADDR_WIDTH 5
+ `define UART_DATA_WIDTH 32
+`endif
 
 // Register addresses
-`define UART_REG_RB	3'd0	// receiver buffer
-`define UART_REG_TR  3'd0	// transmitter
-`define UART_REG_IE	3'd1	// Interrupt enable
-`define UART_REG_II  3'd2	// Interrupt identification
-`define UART_REG_FC  3'd2	// FIFO control
-`define UART_REG_LC	3'd3	// Line Control
-`define UART_REG_MC	3'd4	// Modem control
-`define UART_REG_LS  3'd5	// Line status
-`define UART_REG_MS  3'd6	// Modem status
-`define UART_REG_DL1	3'd0	// Divisor latch bytes (1-4)
-`define UART_REG_DL2	3'd1
-`define UART_REG_DL3	3'd4
-`define UART_REG_DL4	3'd5
+`define UART_REG_RB	`UART_ADDR_WIDTH'd0	// receiver buffer
+`define UART_REG_TR  `UART_ADDR_WIDTH'd0	// transmitter
+`define UART_REG_IE	`UART_ADDR_WIDTH'd1	// Interrupt enable
+`define UART_REG_II  `UART_ADDR_WIDTH'd2	// Interrupt identification
+`define UART_REG_FC  `UART_ADDR_WIDTH'd2	// FIFO control
+`define UART_REG_LC	`UART_ADDR_WIDTH'd3	// Line Control
+`define UART_REG_MC	`UART_ADDR_WIDTH'd4	// Modem control
+`define UART_REG_LS  `UART_ADDR_WIDTH'd5	// Line status
+`define UART_REG_MS  `UART_ADDR_WIDTH'd6	// Modem status
+`define UART_REG_DL1	`UART_ADDR_WIDTH'd0	// Divisor latch bytes (1-2)
+`define UART_REG_DL2	`UART_ADDR_WIDTH'd1
 
 // Interrupt Enable register bits
 `define UART_IE_RDA	0	// Received Data available interrupt
@@ -127,9 +144,9 @@
 `define UART_FC_TL	1:0	// Trigger level
 
 // FIFO trigger level values
-`define UART_FC_1	2'b00
-`define UART_FC_4	2'b01
-`define UART_FC_8	2'b10
+`define UART_FC_1		2'b00
+`define UART_FC_4		2'b01
+`define UART_FC_8		2'b10
 `define UART_FC_14	2'b11
 
 // Line Control register bits
@@ -168,7 +185,6 @@
 `define UART_MS_CRI	6
 `define UART_MS_CDCD	7
 
-
 // FIFO parameter defines
 
 `define UART_FIFO_WIDTH	8
@@ -179,12 +195,13 @@
 `define UART_FIFO_REC_WIDTH  11
 
 
-
-
-
-
-
 `define VERBOSE_WB  0           // All activity on the WISHBONE is recorded
 `define VERBOSE_LINE_STATUS 0   // Details about the lsr (line status register)
 `define FAST_TEST   1           // 64/1024 packets are sent
+
+
+
+
+
+
 

@@ -63,6 +63,10 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.13  2001/11/08 14:54:23  mohor
+// Comments in Slovene language deleted, few small fixes for better work of
+// old tools. IRQs need to be fix.
+//
 // Revision 1.12  2001/11/07 17:51:52  gorban
 // Heavily rewritten interrupt and LSR subsystems.
 // Many bugs hopefully squashed.
@@ -114,7 +118,7 @@
 
 `include "uart_defines.v"
 
-module uart_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_pad_o, state, tf_count, tx_reset, lsr_mask);
+module uart_transmitter (clk, wb_rst_i, lcr, tf_push, wb_dat_i, enable,	stx_pad_o, tstate, tf_count, tx_reset, lsr_mask);
 
 input 										clk;
 input 										wb_rst_i;
@@ -125,10 +129,10 @@ input 										enable;
 input 										tx_reset;
 input 										lsr_mask; //reset of fifo
 output 										stx_pad_o;
-output [2:0] 								state;
+output [2:0] 								tstate;
 output [`UART_FIFO_COUNTER_W-1:0] 	tf_count;
 
-reg [2:0] 									state;
+reg [2:0] 									tstate;
 reg [4:0] 									counter;
 reg [2:0] 									bit_counter;   // counts the bits to be sent
 reg [6:0] 									shift_out;	// output shift register
@@ -177,7 +181,7 @@ always @(posedge clk or posedge wb_rst_i)
 begin
   if (wb_rst_i)
   begin
-	state       <= #1 s_idle;
+	tstate       <= #1 s_idle;
 	stx_o_tmp       <= #1 1'b1;
 	counter   <= #1 5'b0;
 	shift_out   <= #1 7'b0;
@@ -189,17 +193,17 @@ begin
   else
   if (enable)
   begin
-	case (state)
+	case (tstate)
 	s_idle	 :	if (~|tf_count) // if tf_count==0
 			begin
-				state <= #1 s_idle;
+				tstate <= #1 s_idle;
 				stx_o_tmp <= #1 1'b1;
 			end
 			else
 			begin
 				tf_pop <= #1 1'b0;
 				stx_o_tmp  <= #1 1'b1;
-				state  <= #1 s_pop_byte;
+				tstate  <= #1 s_pop_byte;
 			end
 	s_pop_byte :	begin
 				tf_pop <= #1 1'b1;
@@ -222,7 +226,7 @@ begin
 				     end
 				endcase
 				{shift_out[6:0], bit_out} <= #1 tf_data_out;
-				state <= #1 s_send_start;
+				tstate <= #1 s_send_start;
 			end
 	s_send_start :	begin
 				tf_pop <= #1 1'b0;
@@ -232,7 +236,7 @@ begin
 				if (counter == 5'b00001)
 				begin
 					counter <= #1 0;
-					state <= #1 s_send_byte;
+					tstate <= #1 s_send_byte;
 				end
 				else
 					counter <= #1 counter - 1'b1;
@@ -248,12 +252,12 @@ begin
 					begin
 						bit_counter <= #1 bit_counter - 1'b1;
 						{shift_out[5:0],bit_out  } <= #1 {shift_out[6:1], shift_out[0]};
-						state <= #1 s_send_byte;
+						tstate <= #1 s_send_byte;
 					end
 					else   // end of byte
 					if (~lcr[`UART_LC_PE])
 					begin
-						state <= #1 s_send_stop;
+						tstate <= #1 s_send_stop;
 					end
 					else
 					begin
@@ -263,7 +267,7 @@ begin
 						2'b10:	bit_out <= #1 parity_xor;
 						2'b11:	bit_out <= #1 1'b0;
 						endcase
-						state <= #1 s_send_parity;
+						tstate <= #1 s_send_parity;
 					end
 					counter <= #1 0;
 				end
@@ -278,7 +282,7 @@ begin
 				if (counter == 5'b00001)
 				begin
 					counter <= #1 4'b0;
-					state <= #1 s_send_stop;
+					tstate <= #1 s_send_stop;
 				end
 				else
 					counter <= #1 counter - 1'b1;
@@ -290,14 +294,14 @@ begin
 						casex ({lcr[`UART_LC_SB],lcr[`UART_LC_BITS]})
   						3'b0xx:	  counter <= #1 5'b01101;     // 1 stop bit ok igor
   						3'b100:	  counter <= #1 5'b10101;     // 1.5 stop bit
-  						3'b1xx:	  counter <= #1 5'b11101;     // 2 stop bits
+  						default:	  counter <= #1 5'b11101;     // 2 stop bits
 						endcase
 					end
 				else
 				if (counter == 5'b00001)
 				begin
 					counter <= #1 0;
-					state <= #1 s_idle;
+					tstate <= #1 s_idle;
 				end
 				else
 					counter <= #1 counter - 1'b1;
@@ -305,7 +309,7 @@ begin
 			end
 
 		default : // should never get here
-			state <= #1 s_idle;
+			tstate <= #1 s_idle;
 	endcase
   end // end if enable
 end // transmitter logic
