@@ -64,6 +64,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.16  2001/12/20 13:25:46  mohor
+// rx push changed to be only one cycle wide.
+//
 // Revision 1.15  2001/12/18 09:01:07  mohor
 // Bug that was entered in the last update fixed (rx state machine).
 //
@@ -242,7 +245,6 @@ begin
 end   // always
 
 
-// please note though that data_out is only valid one clock after pop signal
 assign data_out = fifo[bottom];
 
 // Additional logic for detection of error conditions (parity and framing) inside the FIFO
