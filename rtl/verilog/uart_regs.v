@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.19  2001/11/10 12:43:21  gorban
+// Synthesis bugs fixed. Some other minor changes
+//
 // Revision 1.18  2001/11/08 14:54:23  mohor
 // Comments in Slovene language deleted, few small fixes for better work of
 // old tools. IRQs need to be fix.
@@ -585,7 +588,7 @@ always  @(posedge clk or posedge wb_rst_i)
 	else ms_int_d <= #1 ms_int;
 
 always  @(posedge clk or posedge wb_rst_i)
-	if (wb_rst_i) rls_int_d <= #1 0;
+	if (wb_rst_i) ti_int_d <= #1 0;
 	else ti_int_d <= #1 ti_int;
 
 // rise detection signals
