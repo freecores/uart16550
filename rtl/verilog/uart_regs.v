@@ -62,6 +62,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.14  2001/10/29 17:00:46  gorban
+// fixed parity sending and tx_fifo resets over- and underrun
+//
 // Revision 1.13  2001/10/20 09:58:40  gorban
 // Small synopsis fixes
 //
@@ -205,8 +208,8 @@ wire				rf_error_bit; // an error (parity or framing) is inside the fifo
 wire	[`UART_FIFO_COUNTER_W-1:0]	rf_count;
 wire	[`UART_FIFO_COUNTER_W-1:0]	tf_count;
 wire	[2:0]			state;
-wire	[5:0]			counter_t;
-wire	[3:0]			counter_b;
+wire	[9:0]			counter_t;
+wire	[7:0]			counter_b;
 wire            rx_lsr_mask;
 
 // Transmitter Instance
@@ -431,7 +434,7 @@ begin
 		lsr[1] <= #1 rf_overrun;     // Receiver overrun error
 		lsr[2] <= #1 rf_data_out[1]; // parity error bit
 		lsr[3] <= #1 rf_data_out[0]; // framing error bit
-		lsr[4] <= #1 (counter_b==4'b0); // break counter reached 0
+		lsr[4] <= #1 (counter_b==8'b0); // break counter reached 0
 		lsr[5] <= #1 (tf_count==5'b0);  // transmitter fifo is empty
 		lsr[6] <= #1 (tf_count==5'b0 && (state == /*`S_IDLE */ 0)); // transmitter empty
 		lsr[7] <= #1 rf_error_bit;
@@ -488,7 +491,7 @@ begin
 		rda_int  <= #1 ier[`UART_IE_RDA] && (rf_count >= {1'b0,trigger_level});
 		thre_int <= #1 threi_clear ? 0 : ier[`UART_IE_THRE] && lsr[`UART_LS_TFE];
 		ms_int   <= #1 ier[`UART_IE_MS] && (| msr[3:0]);
-		ti_int   <= #1 ier[`UART_IE_RDA] && (counter_t == 6'b0);
+		ti_int   <= #1 ier[`UART_IE_RDA] && (counter_t == 10'b0);
 	end
 end
 

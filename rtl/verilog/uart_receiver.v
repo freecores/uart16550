@@ -63,6 +63,9 @@
 // CVS Revision History
 //
 // $Log: not supported by cvs2svn $
+// Revision 1.10  2001/10/20 09:58:40  gorban
+// Small synopsis fixes
+//
 // Revision 1.9  2001/08/24 21:01:12  mohor
 // Things connected to parity changed.
 // Clock devider changed.
@@ -117,8 +120,8 @@ input				rda_int;
 input				rx_reset;
 input       rx_lsr_mask;
 
-output	[5:0]			counter_t;
-output	[3:0]			counter_b;
+output	[9:0]			counter_t;
+output	[7:0]			counter_b;
 output	[`UART_FIFO_COUNTER_W-1:0]	rf_count;
 output	[`UART_FIFO_REC_WIDTH-1:0]	rf_data_out;
 output				rf_overrun;
@@ -320,36 +323,38 @@ end // always of receiver
 //
 // Break condition detection.
 // Works in conjuction with the receiver state machine
-reg	[3:0]	counter_b;	// counts the 1 (idle) signals
+reg	[7:0]	counter_b;	// counts the 1 (idle) signals
 
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
-		counter_b <= #1 4'd11;
+		counter_b <= #1 8'd191;
 	else
 	if (enable)  // only work on enable times
 		if (!srx_pad_i)                                                       // Ta vrstica je bila spremenjena igor !!!
-			counter_b <= #1 4'd11; // maximum character time length - 1
+			counter_b <= #1 8'd191; // maximum character time length - 1
 		else
-			if (counter_b != 4'b0)            // break reached
-				counter_b <= #1 counter_b - 4'd1;  // decrement break counter
+			if (counter_b != 8'b0 && counter_b != 8'hff)            // break reached
+				counter_b <= #1 counter_b - 8'd1;  // decrement break counter
+			else if (rx_lsr_mask)
+				counter_b <= #1 8'hff; /// this won't generate interrupt status after lsr was read
 end // always of break condition detection
 
 ///
 /// Timeout condition detection
-reg	[5:0]	counter_t;	// counts the timeout condition clocks
+reg	[9:0]	counter_t;	// counts the timeout condition clocks
 
 always @(posedge clk or posedge wb_rst_i)
 begin
 	if (wb_rst_i)
-		counter_t <= #1 6'd44;
+		counter_t <= #1 10'd767;
 	else
 	if (enable)
-		if(rf_push || rf_pop || rda_int) // counter is reset when RX FIFO is accessed or above trigger level
-			counter_t <= #1 6'd44;
+		if(rf_push || rf_pop || rda_int || rf_count == 0) // counter is reset when RX FIFO is empty, accessed or above trigger level
+			counter_t <= #1 10'd767;
 		else
-			if (counter_t != 6'b0)  // we don't want to underflow
-				counter_t <= #1 counter_t - 6'd1;		
+			if (counter_t != 10'b0)  // we don't want to underflow
+				counter_t <= #1 counter_t - 10'd1;		
 end
 	
 endmodule
